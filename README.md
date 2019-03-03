@@ -6,7 +6,17 @@ Just copy paste the content of the `climate.programmable_thermostat/custom_compo
 
 As example you will get the '.py' file in the following path: `/config/custom_components/programmable_thermostat/climate.py`.
 
+Note: This component is uploaded on the custom-components repository. To track its updated you should add the following to your `custom_updater` till I'll figure out how to automatically manage it with `customjson` on HassIO.
+
+```yaml
+custom_updater:
+  card_urls:
+    - https://raw.githubusercontent.com/MapoDan/home-assistant/master/custom_components/custom_components.json
+```
+
 ## EXAMPLE OF SETUP
+Here below the example of setup of sensor and parameters to configure.
+
 ```yaml
 climate:
   - platfrom: programmable_thermostat
