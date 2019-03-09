@@ -10,10 +10,11 @@ import voluptuous as vol
 
 from homeassistant.core import callback
 from homeassistant.core import DOMAIN as HA_DOMAIN
-from homeassistant.components.climate import (
-    STATE_HEAT, STATE_COOL, STATE_IDLE, STATE_MANUAL, STATE_AUTO, ClimateDevice,
+from homeassistant.components.climate import ClimateDevice, PLATFORM_SCHEMA
+from .const import (
+    STATE_HEAT, STATE_COOL, STATE_IDLE, STATE_MANUAL, STATE_AUTO,
     ATTR_OPERATION_MODE, ATTR_AWAY_MODE, SUPPORT_OPERATION_MODE,
-    SUPPORT_AWAY_MODE, SUPPORT_TARGET_TEMPERATURE, PLATFORM_SCHEMA)
+    SUPPORT_AWAY_MODE, SUPPORT_TARGET_TEMPERATURE)
 from homeassistant.const import (
     STATE_ON, STATE_OFF, ATTR_TEMPERATURE, CONF_NAME, ATTR_ENTITY_ID,
     SERVICE_TURN_ON, SERVICE_TURN_OFF, STATE_UNKNOWN, PRECISION_HALVES,
@@ -26,7 +27,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 DEPENDENCIES = ['switch', 'sensor']
 
