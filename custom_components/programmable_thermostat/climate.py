@@ -27,7 +27,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '1.0.1'
+__version__ = '1.2.0'
 
 DEPENDENCIES = ['switch', 'sensor']
 
@@ -149,11 +149,11 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
                 else:
                     self._target_temp = float(
                         old_state.attributes[ATTR_TEMPERATURE])
-                if (self._initial_operation_mode is None and
-                        old_state.attributes[ATTR_OPERATION_MODE] is not None):
-                    self._current_operation = \
-                        old_state.attributes[ATTR_OPERATION_MODE]
-                    self._enabled = self._current_operation != STATE_OFF
+            if (self._initial_operation_mode is None and
+                    old_state.attributes[ATTR_OPERATION_MODE] is not None):
+                self._current_operation = \
+                    old_state.attributes[ATTR_OPERATION_MODE]
+                self._enabled = self._current_operation != STATE_OFF
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
