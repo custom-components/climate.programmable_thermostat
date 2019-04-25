@@ -43,7 +43,7 @@ max_temp | 40 | Optional | Maximum temperature manually selectable.
 target_temp_sensor |  | *Required* | Sensor that rapresent the desired temperature for the room. Suggestion: use my [`file_restore`][1] compontent or somthing similar.
 cold_tolerance | 0.5 | Optional | Tolerance for cooling mode. NOT ACTIVE AT THE MOMENT.
 hot_tolerance | 0.5 | Optional | Tolerance for heating mode.
-initial_operation_mode | heat, manual, off | Optional | If not set, components will restore old state after restart.
+initial_operation_mode | `heat`, `manual`, `off` | Optional | If not set, components will restore old state after restart.
 
 ## SPECIFICITIES
 ### TARGET TEMPERATURE SENSOR
