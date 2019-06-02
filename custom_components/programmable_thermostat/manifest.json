@@ -1,0 +1,11 @@
+{
+  "domain": "programmable_thermostat",
+  "name": "Programmable Thermostat",
+  "documentation": "https://github.com/custom-components/climate.programmable_thermostat",
+  "dependencies": [
+    "sensor",
+    "switch"
+  ],
+  "codeowners": [],
+  "requirements": []
+}
