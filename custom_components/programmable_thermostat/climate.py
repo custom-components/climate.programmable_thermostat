@@ -27,7 +27,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '1.2.0'
+__version__ = '2.1.1'
 
 DEPENDENCIES = ['switch', 'sensor']
 
@@ -37,6 +37,7 @@ DEFAULT_MAX_TEMP = 40
 DEFAULT_MIN_TEMP = 5
 
 CONF_HEAT_SWITCH = 'heat_switch'
+CONF_COOL_SWITCH = 'cool_switch'
 CONF_ACT_SENSOR = 'actual_temp_sensor'
 CONF_MIN_TEMP = 'min_temp'
 CONF_MAX_TEMP = 'max_temp'
@@ -44,11 +45,11 @@ CONF_TARGET_SENSOR = 'target_temp_sensor'
 CONF_COLD_TOLERANCE = 'cold_tolerance'
 CONF_HOT_TOLERANCE = 'hot_tolerance'
 CONF_INITIAL_OPERATION_MODE = 'initial_operation_mode'
-SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE |
-                 SUPPORT_OPERATION_MODE)
+SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE | SUPPORT_OPERATION_MODE)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_HEAT_SWITCH): cv.entity_id,
+    vol.Optional(CONF_HEAT_SWITCH): cv.entity_id,
+    vol.Optional(CONF_COOL_SWITCH): cv.entity_id,
     vol.Required(CONF_ACT_SENSOR): cv.entity_id,
     vol.Optional(CONF_MAX_TEMP, default=DEFAULT_MAX_TEMP): vol.Coerce(float),
     vol.Optional(CONF_MIN_TEMP, default=DEFAULT_MIN_TEMP): vol.Coerce(float),
@@ -59,14 +60,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         float),
     vol.Required(CONF_TARGET_SENSOR): cv.entity_id,
     vol.Optional(CONF_INITIAL_OPERATION_MODE):
-        vol.In([STATE_HEAT, STATE_MANUAL, STATE_OFF]),
+        vol.In([STATE_HEAT, STATE_MANUAL, STATE_COOL, STATE_OFF]),
 })
 
 async def async_setup_platform(hass, config, async_add_entities,
                                discovery_info=None):
-    """Set up the generic thermostat platform."""
+    """Set up the Programmable thermostat platform."""
     name = config.get(CONF_NAME)
     heat_switch_entity_id = config.get(CONF_HEAT_SWITCH)
+    cool_switch_entity_id = config.get(CONF_COOL_SWITCH)
     act_sensor_entity_id = config.get(CONF_ACT_SENSOR)
     min_temp = config.get(CONF_MIN_TEMP)
     max_temp = config.get(CONF_MAX_TEMP)
@@ -76,19 +78,20 @@ async def async_setup_platform(hass, config, async_add_entities,
     initial_operation_mode = config.get(CONF_INITIAL_OPERATION_MODE)
 
     async_add_entities([ProgrammableThermostat(
-        hass, name, heat_switch_entity_id, act_sensor_entity_id, min_temp, max_temp,
+        hass, name, heat_switch_entity_id, cool_switch_entity_id, act_sensor_entity_id, min_temp, max_temp,
         target_sensor_entity_id, cold_tolerance,hot_tolerance, initial_operation_mode)])
 
 class ProgrammableThermostat(ClimateDevice, RestoreEntity):
     """Programmable Thermostat."""
 
-    def __init__(self, hass, name, heat_switch_entity_id, act_sensor_entity_id,
+    def __init__(self, hass, name, heat_switch_entity_id, cool_switch_entity_id, act_sensor_entity_id,
                  min_temp, max_temp, target_sensor_entity_id, cold_tolerance,
                  hot_tolerance, initial_operation_mode):
         """Initialize thermostat."""
         self.hass = hass
         self._name = name
         self.heat_switch_entity_id = heat_switch_entity_id
+        self.cool_switch_entity_id = cool_switch_entity_id
         self.act_sensor_entity_id = act_sensor_entity_id
         self._min_temp = min_temp
         self._max_temp = max_temp
@@ -103,23 +106,38 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         self._cur_temp = float(hass.states.get(target_sensor_entity_id).state)
         self._temp_lock = asyncio.Lock()
         self._unit = hass.config.units.temperature_unit
-        self._operation_list = [STATE_HEAT, STATE_MANUAL, STATE_OFF]
-        if initial_operation_mode == STATE_OFF:
-            self._current_operation = STATE_OFF
-            self._enabled = False
+        if self.heat_switch_entity_id is not None and self.cool_switch_entity_id is not None:
+            self._operation_list = [STATE_HEAT, STATE_COOL, STATE_MANUAL, STATE_OFF]
+        elif self.heat_switch_entity_id is not None and self.cool_switch_entity_id is None:
+            self._operation_list = [STATE_HEAT, STATE_MANUAL, STATE_OFF]
+        elif self.cool_switch_entity_id is not None and self.heat_switch_entity_id is None:
+            self._operation_list = [STATE_COOL, STATE_MANUAL, STATE_OFF]
+        else:
+            self._operation_list = [STATE_OFF]
+            _LOGGER.error("ERROR, you have to define at least one between heat_switch and cool_switch")
+        if initial_operation_mode == STATE_HEAT:
+            self._current_operation = STATE_HEAT
+            self._enabled = True
         elif initial_operation_mode == STATE_MANUAL:
             self._current_operation = STATE_MANUAL
             self._enabled = True
-        else:
-            self._current_operation = STATE_HEAT
+        elif initial_operation_mode == STATE_COOL:
+            self._current_operation = STATE_COOL
             self._enabled = True
+        else:
+            self._current_operation = STATE_OFF
+            self._enabled = False
         self._support_flags = SUPPORT_FLAGS
         self._restore_target_temp_state = None
 
         async_track_state_change(
             hass, act_sensor_entity_id, self._async_act_sensor_changed)
-        async_track_state_change(
-            hass, heat_switch_entity_id, self._async_heat_switch_changed)
+        if self._current_operation == STATE_HEAT:
+            async_track_state_change(
+                hass, heat_switch_entity_id, self._async_switch_changed)
+        elif self._current_operation == STATE_COOL:
+            async_track_state_change(
+                hass, cool_switch_entity_id, self._async_switch_changed)
         async_track_state_change(
             hass, target_sensor_entity_id, self._async_target_sensor_changed)
 
@@ -138,7 +156,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         if old_state is not None:
             # If we have no initial temperature, restore
             if self._target_temp is None:
-                # If wwe have previously saved temperature
+                # If we have previously saved temperature
                 if old_state.attributes.get(ATTR_TEMPERATURE) is None:
                     if hass.states.get(target_sensor_entity_id).state is None:
                         self._target_temp = float(hass.states.get(target_sensor_entity_id).state)
@@ -166,26 +184,44 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         if operation_mode == STATE_HEAT:
             self._current_operation = STATE_HEAT
             self._enabled = True
+            for opmod in self._operation_list:
+                if opmod is STATE_COOL:
+                    await self._async_cooler_turn_off()
             await self._async_restore_program_temp()
             await self._async_control_heating()
+        elif operation_mode == STATE_COOL:
+            self._current_operation = STATE_COOL
+            self._enabled = True
+            for opmod in self._operation_list:
+                if opmod is STATE_HEAT:
+                    await self._async_heater_turn_off()
+            await self._async_restore_program_temp()
+            await self._async_control_cooling()
         elif operation_mode == STATE_OFF:
             self._current_operation = STATE_OFF
             self._enabled = False
-            if self._is_device_active:
-                await self._async_heater_turn_off()
+            for opmod in self._operation_list:
+                if opmod is STATE_HEAT:
+                    await self._async_heater_turn_off()
+                if opmod is STATE_COOL:
+                    await self._async_cooler_turn_off()
         elif operation_mode == STATE_MANUAL:
             self._current_operation = STATE_MANUAL
             self._enabled = True
-            await self._async_control_heating()
+            for opmod in self._operation_list:
+                if opmod is STATE_HEAT:
+                    await self._async_control_heating()
+                if opmod is STATE_COOL:
+                    await self._async_control_cooling()
         else:
             _LOGGER.error("Unrecognized operation mode: %s", operation_mode)
             return
         # Ensure we update the current operation after changing the mode
         self.schedule_update_ha_state()
 
-    async def async_turn_on(self):
+    async def async_turn_on(self, operation_mode):
         """Turn thermostat on."""
-        await self.async_set_operation_mode(STATE_HEAT)
+        await self.async_set_operation_mode(operation_mode)
 
     async def async_turn_off(self):
         """Turn thermostat off."""
@@ -197,7 +233,11 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         if temperature is None:
             return
         self._target_temp = float(temperature)
-        await self._async_control_heating()
+        for opmod in self._operation_list:
+            if opmod is STATE_HEAT:
+                await self._async_control_heating()
+            if opmod is STATE_COOL:
+                await self._async_control_cooling()
         await self.async_update_ha_state()
 
     async def _async_act_sensor_changed(self, entity_id, old_state, new_state):
@@ -206,7 +246,11 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             return
 
         self._async_update_temp(new_state)
-        await self._async_control_heating()
+        for opmod in self._operation_list:
+            if opmod is STATE_HEAT:
+                await self._async_control_heating()
+            if opmod is STATE_COOL:
+                await self._async_control_cooling()
         await self.async_update_ha_state()
 
     async def _async_target_sensor_changed(self, entity_id, old_state, new_state):
@@ -216,7 +260,11 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         self._restore_temp = float(new_state.state)
         if self._current_operation != STATE_MANUAL:
             self._async_update_program_temp(new_state)
-        await self._async_control_heating()
+        for opmod in self._operation_list:
+            if opmod is STATE_HEAT:
+                await self._async_control_heating()
+            if opmod is STATE_COOL:
+                await self._async_control_cooling()
         await self.async_update_ha_state()
 
     async def _async_heater_turn_on(self):
@@ -229,6 +277,16 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         data = {ATTR_ENTITY_ID: self.heat_switch_entity_id}
         await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
 
+    async def _async_cooler_turn_on(self):
+        """Turn heater toggleable device on."""
+        data = {ATTR_ENTITY_ID: self.cool_switch_entity_id}
+        await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
+
+    async def _async_cooler_turn_off(self):
+        """Turn heater toggleable device off."""
+        data = {ATTR_ENTITY_ID: self.cool_switch_entity_id}
+        await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
+
     async def _async_restore_program_temp(self):
         """Update thermostat with latest state from sensor to have back automatic value."""
         try:
@@ -237,8 +295,8 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             _LOGGER.error("Unable to update from sensor: %s", ex)
 
     @callback
-    def _async_heat_switch_changed(self, entity_id, old_state, new_state):
-        """Handle heater switch state changes."""
+    def _async_switch_changed(self, entity_id, old_state, new_state):
+        """Handle heater/cooler switch state changes."""
         if new_state is None:
             return
         self.async_schedule_update_ha_state()
@@ -266,7 +324,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
                                                  self._target_temp):
                 self._active = True
                 _LOGGER.info("Obtained current and target temperature. "
-                             "Generic thermostat active. %s, %s",
+                             "Programmable thermostat active. %s, %s",
                              self._cur_temp, self._target_temp)
 
             if not self._active or not self._enabled:
@@ -274,24 +332,46 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
 
             if self._is_device_active:
                 if (self._target_temp - self._cur_temp) <= 0:
-                    _LOGGER.info("Turning off heater %s",
-                                 self.heat_switch_entity_id)
+                    _LOGGER.info("Turning off heater %s", self.heat_switch_entity_id)
                     await self._async_heater_turn_off()
             else:
                 if (self._target_temp - self._cur_temp) >= self._hot_tolerance:
                     _LOGGER.info("Turning on heater %s", self.heat_switch_entity_id)
                     await self._async_heater_turn_on()
 
+    async def _async_control_cooling(self):
+        """Activate and de-activate cooling."""
+        async with self._temp_lock:
+            if not self._active and None not in (self._cur_temp,
+                                                 self._target_temp):
+                self._active = True
+                _LOGGER.info("Obtained current and target temperature. "
+                             "Programmable thermostat active. %s, %s",
+                             self._cur_temp, self._target_temp)
+
+            if not self._active or not self._enabled:
+                return
+
+            if self._is_device_active:
+                if (self._cur_temp - self._target_temp) <= 0:
+                    _LOGGER.info("Turning off cooler %s", self.cool_switch_entity_id)
+                    await self._async_cooler_turn_off()
+            else:
+                if (self._cur_temp - self._target_temp) >= self._cold_tolerance:
+                    _LOGGER.info("Turning on cooler %s", self.cool_switch_entity_id)
+                    await self._async_cooler_turn_on()
+
     @property
     def state(self):
         """Return the current state."""
-        if self._is_device_active and self._current_operation != STATE_MANUAL:
+        """if self._is_device_active and self._current_operation != STATE_MANUAL:
             return STATE_ON
         if self._enabled and self._current_operation != STATE_MANUAL:
             return STATE_AUTO
         if self._enabled and self._current_operation == STATE_MANUAL:
             return STATE_MANUAL
-        return STATE_OFF
+        return STATE_OFF"""
+        return self._current_operation
 
     @property
     def should_poll(self):
@@ -349,7 +429,19 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
     @property
     def _is_device_active(self):
         """If the toggleable device is currently active."""
-        return self.hass.states.is_state(self.heat_switch_entity_id, STATE_ON)
+        if self._current_operation == STATE_HEAT:
+            return self.hass.states.is_state(self.heat_switch_entity_id, STATE_ON)
+        elif self._current_operation == STATE_COOL:
+            return self.hass.states.is_state(self.cool_switch_entity_id, STATE_ON)
+        elif self._current_operation == STATE_MANUAL:
+            if self.hass.states.is_state(self.cool_switch_entity_id, STATE_ON):
+                return self.hass.states.is_state(self.cool_switch_entity_id, STATE_ON)
+            elif self.hass.states.is_state(self.heat_switch_entity_id, STATE_ON):
+                return self.hass.states.is_state(self.heat_switch_entity_id, STATE_ON)
+            else:
+                return False
+        else:
+            return False
 
     @property
     def supported_features(self):
