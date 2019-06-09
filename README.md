@@ -36,14 +36,15 @@ Field | Value | Necessity | Comments
 --- | --- | --- | ---
 platform | `programmable_thermostat` | *Required* |
 name| Programmable Thermostat | Optional |
-heat_switch |  | *Required* | Switch that will activate/deactivate the heating system.
+heat_switch |  | *Conditional* | Switch that will activate/deactivate the heating system. At least one between `heat_switch` and `cool_switch` has to be defined.
+cool_switch |  | *Conditional* | Switch that will activate/deactivate the cooling system. At least one between `heat_switch` and `cool_switch` has to be defined.
 actual_temp_sensor |  | *Required* | Sensor of actual room temperature.
 min_temp | 5 | Optional | Minimum temperature manually selectable.
 max_temp | 40 | Optional | Maximum temperature manually selectable.
 target_temp_sensor |  | *Required* | Sensor that rapresent the desired temperature for the room. Suggestion: use my [`file_restore`][1] compontent or somthing similar.
 cold_tolerance | 0.5 | Optional | Tolerance for cooling mode. NOT ACTIVE AT THE MOMENT.
 hot_tolerance | 0.5 | Optional | Tolerance for heating mode.
-initial_operation_mode | `heat`, `manual`, `off` | Optional | If not set, components will restore old state after restart.
+initial_operation_mode | `heat`, `cool`, `manual`, `off` | Optional | If not set, components will restore old state after restart. I suggest to not use it.
 
 ## SPECIFICITIES
 ### TARGET TEMPERATURE SENSOR
@@ -54,14 +55,12 @@ Suggestion: use my [`file_restore`][1] custom components.
 
 ### ADDITIONAL INFO
 Programmed temperature will change accordingly to the one set by the `target_temp_sensor`, this will not happen if the mode is set to `manual`.
-In `heat` and `cool` (not supported at the moment) modes you can still change manually the temperature for the room, but in this case the target temperature will be set, again, to the one of `target_temp_sensor` at its first change.
+In `heat` and `cool` modes you can still change manually the temperature for the room, but in this case the target temperature will be set, again, to the one of `target_temp_sensor` at its first change.
 
-`heat` and `cool` (not supported at the moment) modes rapresent the automatic mode. In those modes climate entity state will be `auto`.
+`heat` and `cool` modes rapresent the automatic mode.
 
 After a restart of Home Assistant, room temperature e planned room temperature will match till `actual_temp_sensor` will return a temperature value.
 This is done to avoid possible issues with Homekit support with temperature sensor that need some time to sync with Home Assistant.
-
-**`cool` mode is not supported at the moment. It will be in a future release.**
 
 ## NOTE
 This component has been developed for the bigger project of building a smart thermostat using Home Assistant and way cheeper then the commercial ones.
