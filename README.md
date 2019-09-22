@@ -67,6 +67,6 @@ Everything is available through HACS.
 ![logo][2]
 
 
-[1]: https://github.com/MapoDan/home-assistant/tree/master/custom_components/sensor.file_restore
+[1]: https://github.com/custom-components/sensor.file_restore
 [2]: https://github.com/MapoDan/home-assistant/blob/master/mapodanlogo.png
 [3]: https://github.com/MapoDan/home-assistant
