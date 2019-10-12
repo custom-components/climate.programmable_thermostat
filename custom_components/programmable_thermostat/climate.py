@@ -22,7 +22,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
 DEPENDENCIES = ['switch', 'sensor']
 
@@ -150,7 +150,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
 
         # Check If we have an old state
         old_state = await self.async_get_last_state()
-        _LOGGER.error("old state: %s", old_state)
+        _LOGGER.info("old state: %s", old_state)
         if old_state is not None:
             # If we have no initial temperature, restore
             if self._target_temp is None:
@@ -300,9 +300,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
 
             Need to be one of CURRENT_HVAC_*.
             """
-            if self.hass.states.is_state(self.cooler_entity_id, STATE_ON):
+            if self.cooler_entity_id is not None and self.hass.states.is_state(self.cooler_entity_id, STATE_ON):
                 self._hvac_action = CURRENT_HVAC_COOL
-            elif self.hass.states.is_state(self.heater_entity_id, STATE_ON):
+            elif self.heater_entity_id is not None and self.hass.states.is_state(self.heater_entity_id, STATE_ON):
                 self._hvac_action = CURRENT_HVAC_HEAT
             else:
                 self._hvac_action = CURRENT_HVAC_OFF
@@ -322,6 +322,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             if not self._active or self._hvac_mode == HVAC_MODE_OFF or self._hvac_mode == HVAC_MODE_COOL:
                 return
 
+            self._check_mode_type = "heat"
             if self._is_device_active:
                 if (self._target_temp - self._cur_temp) <= 0:
                     await self._async_heater_turn_off()
@@ -343,6 +344,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             if not self._active or self._hvac_mode == HVAC_MODE_OFF or self._hvac_mode == HVAC_MODE_HEAT:
                 return
 
+            self._check_mode_type = "cool"
             if self._is_device_active:
                 if (self._cur_temp - self._target_temp) <= 0:
                     _LOGGER.info("Turning off cooler %s", self.cooler_entity_id)
@@ -444,9 +446,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         elif self._hvac_mode == HVAC_MODE_COOL:
             return self.hass.states.is_state(self.cooler_entity_id, STATE_ON)
         elif self._hvac_mode == HVAC_MODE_HEAT_COOL:
-            if self.hass.states.is_state(self.cooler_entity_id, STATE_ON):
+            if self._check_mode_type == "cool":
                 return self.hass.states.is_state(self.cooler_entity_id, STATE_ON)
-            elif self.hass.states.is_state(self.heater_entity_id, STATE_ON):
+            elif self._check_mode_type == "heat":
                 return self.hass.states.is_state(self.heater_entity_id, STATE_ON)
             else:
                 return False
