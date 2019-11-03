@@ -8,8 +8,6 @@ As example you will get the '.py' file in the following path: `/config/custom_co
 
 Note: you can install through HACS.
 
-## ATTENTION: THIS VERSION INCLUDES LOTS OF BREAKING CHANGES DUE TO THE UPDATE OF CLIMIATE COMPONENT. STATE, CONFIG STRINGS AND OTHER ATTRIBUTES HAVE CHANGED.
-
 ## EXAMPLE OF SETUP
 Here below the example of setup of sensor and parameters to configure.
 
