@@ -22,7 +22,7 @@ climate:
     max_temp: 30
     target_temp_sensor: sensor.program_temperature
     tolerance: 0.3
-    master_climate: climate.room_2
+    related_climate: climate.room_2
     
 ```
 
@@ -38,7 +38,7 @@ max_temp | 40 | Optional | Maximum temperature manually selectable.
 target_temp_sensor |  | *Required* | Sensor that rapresent the desired temperature for the room. Suggestion: use my [`file_restore`][1] compontent or somthing similar.
 tolerance | 0.5 | Optional | Tolerance for turn on and off the switches mode.
 initial_hvac_mode | `heat`, `cool`, `off` | Optional | If not set, components will restore old state after restart. I suggest to not use it.
-master_climate |  | Optional | To be used if the climate object is a slave of an other one. below 'Master climate' chapter a description.
+related_climate |  | Optional | To be used if the climate object is a slave of an other one. below 'Related climate' chapter a description.
 
 ## SPECIFICITIES
 ### TARGET TEMPERATURE SENSOR
@@ -56,14 +56,16 @@ In `heat` and `cool` modes you can still change manually the temperature for the
 After a restart of Home Assistant, room temperature e planned room temperature will match till `actual_temp_sensor` will return a temperature value.
 This is done to avoid possible issues with Homekit support with temperature sensor that need some time to sync with Home Assistant.
 
-### MASTER CLIMATE
-This field is used if the climate is a slevery one.
+### RELATED CLIMATE
+This field is used if the climate 2 climate object are related each other, for example if they used the same heater.
 Set this field with the `entity_id` with a different climate object and this will prevent the heater/cooler to be turned off by the slavery climate if the master one is active.
 
-For example I have 2 climate object, one for the room and one for the boiler.
+For example I have 2 climate objects, one for the room and one for the boiler.
 Boiler's climate is used to prevent freezing and, if the temperature is lower the the programmed one, room heater is turned on.
 This means that, if the room's heater is on and boiler's heater is off, boiler will turn off the heater despite the room one.
 With this `master_climate` field this unwanted turn off will not happen.
+
+Note: my suggestion is to set it to both climates that are related each other.
 
 ## NOTE
 This component has been developed for the bigger project of building a smart thermostat using Home Assistant and way cheeper then the commercial ones.
