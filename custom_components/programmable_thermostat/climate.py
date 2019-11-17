@@ -22,7 +22,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '4.0'
+__version__ = '4.1'
 
 DEPENDENCIES = ['switch', 'sensor']
 
@@ -39,7 +39,7 @@ CONF_MAX_TEMP = 'max_temp'
 CONF_TARGET = 'target_temp_sensor'
 CONF_TOLERANCE = 'tolerance'
 CONF_INITIAL_HVAC_MODE = 'initial_hvac_mode'
-CONF_MASTER_CLIMATE = 'master_climate'
+CONF_RELATED_CLIMATE = 'related_climate'
 SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -51,7 +51,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_MIN_TEMP): vol.Coerce(float),
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_TOLERANCE, default=DEFAULT_TOLERANCE): vol.Coerce(float),
-    vol.Optional(CONF_MASTER_CLIMATE): cv.entity_id,
+    vol.Optional(CONF_RELATED_CLIMATE): cv.entity_id,
     vol.Optional(CONF_INITIAL_HVAC_MODE):
         vol.In([HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_HEAT_COOL]),
 })
@@ -68,12 +68,12 @@ async def async_setup_platform(hass, config, async_add_entities,
     target_entity_id = config.get(CONF_TARGET)
     tolerance = config.get(CONF_TOLERANCE)
     initial_hvac_mode = config.get(CONF_INITIAL_HVAC_MODE)
-    master_climate = config.get(CONF_MASTER_CLIMATE)
+    related_climate = config.get(CONF_RELATED_CLIMATE)
     unit = hass.config.units.temperature_unit
 
     async_add_entities([ProgrammableThermostat(
         hass, name, heater_entity_id, cooler_entity_id, sensor_entity_id, min_temp,
-        max_temp, target_entity_id, tolerance, initial_hvac_mode, unit, master_climate)])
+        max_temp, target_entity_id, tolerance, initial_hvac_mode, unit, related_climate)])
 
 
 class ProgrammableThermostat(ClimateDevice, RestoreEntity):
@@ -81,7 +81,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
 
     def __init__(self, hass, name, heater_entity_id, cooler_entity_id,
                  sensor_entity_id, min_temp, max_temp, target_entity_id,
-                 tolerance, initial_hvac_mode, unit, master_climate):
+                 tolerance, initial_hvac_mode, unit, related_climate):
         """Initialize the thermostat."""
         self.hass = hass
         self._name = name
@@ -94,7 +94,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         self._initial_hvac_mode = initial_hvac_mode
         self.target_entity_id = target_entity_id
         self._unit = unit
-        self._master_climate = master_climate
+        self._related_climate = related_climate
 
         self._target_temp = float(hass.states.get(target_entity_id).state)
         self._restore_temp = self._target_temp
@@ -141,9 +141,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
                 self.hass, self.cooler_entity_id, self._async_switch_changed)
         async_track_state_change(
             self.hass, self.target_entity_id, self._async_target_changed)
-        if self._master_climate is not None:
+        if self._related_climate is not None:
             async_track_state_change(
-                self.hass, self._master_climate, self._async_switch_changed)
+                self.hass, self._related_climate, self._async_switch_changed)
 
         @callback
         def _async_startup(event):
@@ -227,21 +227,19 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         """Turn heater toggleable device on."""
         if mode == "heat":
             data = {ATTR_ENTITY_ID: self.heater_entity_id}
-            self._hvac_action = CURRENT_HVAC_HEAT
         elif mode == "cool":
             data = {ATTR_ENTITY_ID: self.cooler_entity_id}
-            self._hvac_action = CURRENT_HVAC_COOL
         else:
             _LOGGER.error("No type has been passed to turn_on function")
-        _LOGGER.info("new action %s", self._hvac_action)
+        self._set_hvac_action_on(mode=mode)
         await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
         await self.async_update_ha_state()
 
     async def _async_turn_off(self, mode=None):
         """Turn heater toggleable device off."""
-        if self._master_climate is not None:
-            if self.hass.states.get(self._master_climate).attributes['hvac_action'] == CURRENT_HVAC_HEAT or self.hass.states.get(self._master_climate).attributes['hvac_action'] == CURRENT_HVAC_COOL:
-                _LOGGER.info("Master climate object action is %s, so no action taken.", self.hass.states.get(self._master_climate).attributes['hvac_action'])
+        if self._related_climate is not None:
+            if self.hass.states.get(self._related_climate).attributes['hvac_action'] == CURRENT_HVAC_HEAT or self.hass.states.get(self._related_climate).attributes['hvac_action'] == CURRENT_HVAC_COOL:
+                _LOGGER.info("Master climate object action is %s, so no action taken.", self.hass.states.get(self._related_climate).attributes['hvac_action'])
                 return
         if mode == "heat":
             data = {ATTR_ENTITY_ID: self.heater_entity_id}
@@ -326,7 +324,10 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             if self._is_device_active:
                 if delta <= 0:
                     _LOGGER.info("Turning off %s", entity)
+                    self._set_hvac_action_off(mode=mode)
                     await self._async_turn_off(mode=mode)
+                elif delta >= self._tolerance:
+                    self._set_hvac_action_on(mode=mode)
             else:
                 if delta >= self._tolerance:
                     _LOGGER.info("Turning on %s", entity)
@@ -344,6 +345,16 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
            not self._hvac_mode == HVAC_MODE_HEAT_COOL):
             self._hvac_action = CURRENT_HVAC_OFF
             _LOGGER.info("new action %s", self._hvac_action)
+
+    def _set_hvac_action_on(self, mode=None):
+        """This is used to set CURRENT_HVAC_* according to the mode that is running."""
+        if mode == "heat":
+            self._hvac_action = CURRENT_HVAC_HEAT
+        elif mode == "cool":
+            self._hvac_action = CURRENT_HVAC_COOL
+        else:
+            _LOGGER.error("No type has been passed to turn_on function")
+        _LOGGER.info("new action %s", self._hvac_action)
 
     @callback
     def _async_switch_changed(self, entity_id, old_state, new_state):
