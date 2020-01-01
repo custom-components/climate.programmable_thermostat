@@ -281,7 +281,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         """Handle temperature changes."""
         if new_state is None:
             return
-        self._async_update_temp(new_state)
+        self._async_update_temp(new_state.state)
         await self.control_system_mode()
         await self.async_update_ha_state()
 
@@ -376,7 +376,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
     def _async_update_temp(self, state):
         """Update thermostat with latest state from sensor."""
         try:
-            self._cur_temp = float(state.state)
+            self._cur_temp = float(state)
         except ValueError as ex:
             _LOGGER.error("Unable to update from sensor: %s", ex)
 
