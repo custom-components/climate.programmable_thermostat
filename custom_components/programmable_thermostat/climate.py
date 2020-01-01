@@ -96,9 +96,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         self._unit = unit
         self._related_climate = related_climate
 
-        self._target_temp = self.getFloat(self.getStateSafe(target_entity_id), None)
+        self._target_temp = self._getFloat(self._getStateSafe(target_entity_id), None)
         self._restore_temp = self._target_temp
-        self._cur_temp = self.getFloat(self.getStateSafe(sensor_entity_id), self._target_temp)
+        self._cur_temp = self._getFloat(self._getStateSafe(sensor_entity_id), self._target_temp)
         self._active = False
         self._temp_lock = asyncio.Lock()
         self._hvac_action = CURRENT_HVAC_OFF
@@ -144,10 +144,10 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         @callback
         def _async_startup(event):
             """Init on startup."""
-            sensor_state = self.getStateSafe(self.sensor_entity_id)
+            sensor_state = self._getStateSafe(self.sensor_entity_id)
             if sensor_state and sensor_state != STATE_UNKNOWN:
                 self._async_update_temp(sensor_state)
-            target_state = self.getStateSafe(self.target_entity_id)
+            target_state = self._getStateSafe(self.target_entity_id)
             if target_state and \
                target_state != STATE_UNKNOWN and \
                self._hvac_mode != HVAC_MODE_HEAT_COOL:
@@ -164,7 +164,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             if self._target_temp is None:
                 # If we have a previously saved temperature
                 if old_state.attributes.get(ATTR_TEMPERATURE) is None:
-                    target_entity_state = self.getStateSafe(target_entity_id)
+                    target_entity_state = self._getStateSafe(target_entity_id)
                     if target_entity_state is not None:
                         self._target_temp = float(target_entity_state)
                     else:
@@ -354,13 +354,13 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             _LOGGER.error("No type has been passed to turn_on function")
         _LOGGER.info("new action %s", self._hvac_action)
 
-    def getStateSafe(self, entity_id):
+    def _getStateSafe(self, entity_id):
         full_state = self.hass.states.get(entity_id)
         if full_state is not None:
             return full_state.state
         return None
 
-    def getFloat(self, valStr, defaultVal):
+    def _getFloat(self, valStr, defaultVal):
         if valStr!=STATE_UNKNOWN and valStr is not None:
             return float(valStr)
         return defaultVal
