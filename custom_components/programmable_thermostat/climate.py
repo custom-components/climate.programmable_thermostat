@@ -96,13 +96,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         self._unit = unit
         self._related_climate = related_climate
 
-        self._target_temp = float(hass.states.get(target_entity_id).state)
+        self._target_temp = self.getFloat(self.getStateSafe(target_entity_id), None)
         self._restore_temp = self._target_temp
-        # To avoid error in case real temp sensor take some time to return a number
-        if hass.states.get(sensor_entity_id).state != STATE_UNKNOWN:
-            self._cur_temp = float(hass.states.get(sensor_entity_id).state)
-        else:
-            self._cur_temp = self._target_temp
+        self._cur_temp = self.getFloat(self.getStateSafe(sensor_entity_id), self._target_temp)
         self._active = False
         self._temp_lock = asyncio.Lock()
         self._hvac_action = CURRENT_HVAC_OFF
@@ -148,12 +144,12 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         @callback
         def _async_startup(event):
             """Init on startup."""
-            sensor_state = self.hass.states.get(self.sensor_entity_id)
-            if sensor_state and sensor_state.state != STATE_UNKNOWN:
+            sensor_state = self.getStateSafe(self.sensor_entity_id)
+            if sensor_state and sensor_state != STATE_UNKNOWN:
                 self._async_update_temp(sensor_state)
-            target_state = self.hass.states.get(self.target_entity_id)
+            target_state = self.getStateSafe(self.target_entity_id)
             if target_state and \
-               target_state.state != STATE_UNKNOWN and \
+               target_state != STATE_UNKNOWN and \
                self._hvac_mode != HVAC_MODE_HEAT_COOL:
                 self._async_update_program_temp(target_state)
 
@@ -168,8 +164,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             if self._target_temp is None:
                 # If we have a previously saved temperature
                 if old_state.attributes.get(ATTR_TEMPERATURE) is None:
-                    if self.hass.states.get(target_entity_id).state is None:
-                        self._target_temp = float(self.hass.states.get(target_entity_id).state)
+                    target_entity_state = self.getStateSafe(target_entity_id)
+                    if target_entity_state is not None:
+                        self._target_temp = float(target_entity_state)
                     else:
                         self._target_temp = float((self._min_temp + self._max_temp)/2)
                     _LOGGER.warning("Undefined target temperature,"
@@ -238,8 +235,9 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
     async def _async_turn_off(self, mode=None):
         """Turn heater toggleable device off."""
         if self._related_climate is not None:
-            if self.hass.states.get(self._related_climate).attributes['hvac_action'] == CURRENT_HVAC_HEAT or self.hass.states.get(self._related_climate).attributes['hvac_action'] == CURRENT_HVAC_COOL:
-                _LOGGER.info("Master climate object action is %s, so no action taken.", self.hass.states.get(self._related_climate).attributes['hvac_action'])
+            related_climate_hvac_action = self.hass.states.get(self._related_climate).attributes['hvac_action']
+            if related_climate_hvac_action == CURRENT_HVAC_HEAT or related_climate_hvac_action == CURRENT_HVAC_COOL:
+                _LOGGER.info("Master climate object action is %s, so no action taken.", related_climate_hvac_action)
                 return
         if mode == "heat":
             data = {ATTR_ENTITY_ID: self.heater_entity_id}
@@ -355,6 +353,17 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         else:
             _LOGGER.error("No type has been passed to turn_on function")
         _LOGGER.info("new action %s", self._hvac_action)
+
+    def getStateSafe(self, entity_id):
+        full_state = self.hass.states.get(entity_id)
+        if full_state is not None:
+            return full_state.state
+        return None
+
+    def getFloat(self, valStr, defaultVal):
+        if valStr!=STATE_UNKNOWN and valStr is not None:
+            return float(valStr)
+        return defaultVal
 
     @callback
     def _async_switch_changed(self, entity_id, old_state, new_state):
