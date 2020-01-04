@@ -22,7 +22,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '4.1'
+__version__ = '4.2'
 
 DEPENDENCIES = ['switch', 'sensor']
 
