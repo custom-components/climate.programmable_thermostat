@@ -15,7 +15,9 @@ Here below the example of setup of sensor and parameters to configure.
 climate:
   - platform: programmable_thermostat
     name: room
-    heater: switch.riscaldamento
+    heater: 
+      - switch.riscaldamento_1
+      - switch.riscaldamento_2
     cooler: switch.condizionamento
     actual_temp_sensor: sensor.target_temperature
     min_temp: 10
@@ -30,12 +32,12 @@ Field | Value | Necessity | Comments
 --- | --- | --- | ---
 platform | `programmable_thermostat` | *Required* |
 name| Programmable Thermostat | Optional |
-heater |  | *Conditional* | Switch that will activate/deactivate the heating system. At least one between `heater` and `cooler` has to be defined.
-cooler |  | *Conditional* | Switch that will activate/deactivate the cooling system. At least one between `heater` and `cooler` has to be defined.
+heater |  | *Conditional* | Switch that will activate/deactivate the heating system. This can be a single entity or a list of entities. At least one between `heater` and `cooler` has to be defined.
+cooler |  | *Conditional* | Switch that will activate/deactivate the cooling system.  This can be a single entity or a list of entities. At least one between `heater` and `cooler` has to be defined.
 actual_temp_sensor |  | *Required* | Sensor of actual room temperature.
 min_temp | 5 | Optional | Minimum temperature manually selectable.
 max_temp | 40 | Optional | Maximum temperature manually selectable.
-target_temp_sensor |  | *Required* | Sensor that rapresent the desired temperature for the room. Suggestion: use my [`file_restore`][1] compontent or somthing similar.
+target_temp_sensor |  | *Required* | Sensor that rapresent the desired temperature for the room. Suggestion: use my [`file_restore`][1] compontent or something similar.
 tolerance | 0.5 | Optional | Tolerance for turn on and off the switches mode.
 initial_hvac_mode | `heat`, `cool`, `off` | Optional | If not set, components will restore old state after restart. I suggest to not use it.
 related_climate |  | Optional | To be used if the climate object is a slave of an other one. below 'Related climate' chapter a description.
