@@ -22,7 +22,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '4.2'
+__version__ = '4.3'
 
 DEPENDENCIES = ['switch', 'sensor']
 
@@ -405,7 +405,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
     def _async_update_program_temp(self, state):
         """Update thermostat with latest state from sensor."""
         try:
-            self._target_temp = float(state.state)
+            self._target_temp = float(state)
         except ValueError as ex:
             _LOGGER.error("Unable to update from sensor: %s", ex)
 
