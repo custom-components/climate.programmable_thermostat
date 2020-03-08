@@ -41,7 +41,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = '5.0'
+__version__ = '5.1'
 
 DEPENDENCIES = ['switch', 'sensor']
 
@@ -410,8 +410,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
         # This if condition is necessary to correctly manage the action for the different modes.
         if (((mode == "cool" and not self._hvac_mode == HVAC_MODE_HEAT) or \
            (mode == "heat" and not self._hvac_mode == HVAC_MODE_COOL)) and \
-           not self._hvac_mode == HVAC_MODE_HEAT_COOL) or \
-           (self._hvac_mode == HVAC_MODE_HEAT_COOL and self._areAllInState(self.heaters_entity_ids, STATE_OFF) and self._areAllInState(self.coolers_entity_ids, STATE_OFF)):
+           not self._hvac_mode == HVAC_MODE_HEAT_COOL):
             self._hvac_action = CURRENT_HVAC_OFF
             _LOGGER.info("new action %s", self._hvac_action)
 
