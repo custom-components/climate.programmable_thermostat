@@ -1,16 +1,32 @@
+# WHAT'S NEW
+### BIG CHANGES IN THA HOUSE!
+Big changes and NO breaking ones!
+
+What's new:
+- UI setup is landed! Now you can set up everything from UI. (in next releases I'll put in place also the option flow)
+
+What else:
+- Splitting up code in different files to have it more clear
+- Clean up code to remove useless things
+- Logs more clear to let you identify immediatly the instance that is causing the error
+
+UI setup languages available are only English and Italian. If you would like to prepare the JSON with translation in your language it would be appreciated! To do this just copy one of the JSON within the translations folder and prepare your own!
+
 # PROGRAMMABLE THERMOSTAT
 This component is a revision of the official Home Assistant component 'Generic Thermostat' in order to have possibility to have target temperature variable according to a sensor state value.
 
 ## HOW TO INSTALL
+Use HACS to install the custom component and configure it through the user interface (settings/integration) to have easy and smooth usage.
+
+If you are for the manual method:
 Just copy paste the content of the `climate.programmable_thermostat/custom_components` folder in your `config/custom_components` directory.
 
 As example you will get the '.py' file in the following path: `/config/custom_components/programmable_thermostat/climate.py`.
 
-Note: you can install through HACS.
-
 ## EXAMPLE OF SETUP
-Here below the example of setup of sensor and parameters to configure.
+Config flow is available, so just configure all the entities you want through the user interface.
 
+Here below the example of manual setup of sensor and parameters to configure.
 ```yaml
 climate:
   - platform: programmable_thermostat
