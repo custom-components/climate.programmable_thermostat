@@ -7,5 +7,6 @@
     "switch"
   ],
   "codeowners": [],
-  "requirements": []
+  "requirements": [],
+  "config_flow": true
 }
