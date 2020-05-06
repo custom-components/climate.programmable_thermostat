@@ -2,15 +2,17 @@
 This component is a revision of the official Home Assistant component 'Generic Thermostat' in order to have possibility to have target temperature variable according to a sensor state value.
 
 ## HOW TO INSTALL
+Use HACS to install the custom component and configure it through the user interface (settings/integration) to have easy and smooth usage.
+
+If you are for the manual method:
 Just copy paste the content of the `climate.programmable_thermostat/custom_components` folder in your `config/custom_components` directory.
 
 As example you will get the '.py' file in the following path: `/config/custom_components/programmable_thermostat/climate.py`.
 
-Note: you can install through HACS.
-
 ## EXAMPLE OF SETUP
-Here below the example of setup of sensor and parameters to configure.
+Config flow is available, so just configure all the entities you want through the user interface.
 
+Here below the example of manual setup of sensor and parameters to configure.
 ```yaml
 climate:
   - platform: programmable_thermostat
