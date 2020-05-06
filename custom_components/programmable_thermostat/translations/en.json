@@ -1,0 +1,48 @@
+{
+    "config": {
+        "title": "Programmable thermostat",
+        "step": {
+            "user": {
+                "title": "Programmable thermostat - entities definition",
+                "description": "Define entities connected to the thermostat. Documentation at https://github.com/custom-components/climate.programmable_thermostat",
+                "data": {
+                    "name": "Name",
+                    "heater": "Heaters (comma separated name of entities)",
+                    "cooler": "Coolers (comma separated name of entities)",
+                    "actual_temp_sensor": "Room temperature sensor (entity name)",
+                    "target_temp_sensor": "Planned temperature sensor (entity name)"
+                }
+            },
+            "second": {
+                "title": "Programmable thermostat - temperature definition",
+                "description": "Define min and max temperature and the delta activation. Documentation at https://github.com/custom-components/climate.programmable_thermostat",
+                "data": {
+                    "min_temp": "Min temperature allowed",
+                    "max_temp": "Max temperature allowed",
+                    "tolerance": "Activation temperature delta (tenth has to different from 0)"
+                }
+            },
+            "final": {
+                "title": "Programmable thermostat - options definition",
+                "description": "Define additional options. Documentation at https://github.com/custom-components/climate.programmable_thermostat",
+                "data": {
+                    "initial_hvac_mode": "Startup mode",
+                    "related_climate": "Climate entity connect to this one (entity name)",
+                    "hvac_options": "Allowed modes",
+                    "auto_mode": "Automatic mode type"
+                }
+            }
+        },
+        "error": {
+          "name": "Choose a name",
+          "heater and cooler": "Valorize at least one between heaters and coolers",
+          "heater wrong": "One or more heaters are not existing into Home Assistant",
+          "cooler wrong": "One or more coolers are not existing into Home Assistant",
+          "sensor wrong": "Room temperature sensor is not existing into Home Assistant",
+          "target wrong": "Plannned temperature sensor is not existing into Home Assistant",
+          "min_temp": "Min temperature has to be lower then max one",
+          "tolerance": "Activation delta has to be positive, lower then min temperature and with tenth different from 0",
+          "related climate": "Climate entity that you want to connect is not valid or not existing"
+        }
+    }
+}

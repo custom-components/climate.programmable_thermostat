@@ -1,0 +1,48 @@
+{
+    "config": {
+        "title": "Termostato programmabile",
+        "step": {
+            "user": {
+                "title": "Termostato programmabile - definizione entità",
+                "description": "Definisci le entità collegate al termostato. Documentazione su https://github.com/custom-components/climate.programmable_thermostat",
+                "data": {
+                    "name": "Nome",
+                    "heater": "Riscaldamento (nomi entità separate da virgole)",
+                    "cooler": "Raffrescamento (nomi entità separate da virgole)",
+                    "actual_temp_sensor": "Sensore di temperatura della stanza (nome entità)",
+                    "target_temp_sensor": "Sensore della temperatura pianificata (nome entità)"
+                }
+            },
+            "second": {
+                "title": "Termostato programmabile - definizione temperature",
+                "description": "Definisci i le temperature massime e minime utilizzabili e il delta di attivazione. Documentazione su https://github.com/custom-components/climate.programmable_thermostat",
+                "data": {
+                    "min_temp": "Temperatura minima di esercizio",
+                    "max_temp": "Temperatura massima di esercizio",
+                    "tolerance": "Delta di temperatura per attivazione termostato (decimale obbligatorio diverso da 0)"
+                }
+            },
+            "final": {
+                "title": "Termostato programmabile - definizione opzioni",
+                "description": "Definisci le opzioni aggiuntive. Documentazione su https://github.com/custom-components/climate.programmable_thermostat",
+                "data": {
+                    "initial_hvac_mode": "Modalità di lavoro all'avvio",
+                    "related_climate": "Altra entità climate legata a questa (nome entità)",
+                    "hvac_options": "Modalità di lavoro attive",
+                    "auto_mode": "Modalità di lavoro in automatico"
+                }
+            }
+        },
+        "error": {
+          "name": "Inserisci un nome",
+          "heater and cooler": "Inserisci almeno una tra riscaldamento e condizionamento",
+          "heater wrong": "Una o più entità di riscaldamento non esistono in Home Assistant",
+          "cooler wrong": "Una o più entità di condizionamento non esistono in Home Assistant",
+          "sensor wrong": "L'entità del sensore di temperatura non esiste in Home Assistant",
+          "target wrong": "L'entità del programma di temperatura non esiste in Home Assistant",
+          "min_temp": "La temperatura minima deve essere minore della massima",
+          "tolerance": "Il delta di attivazione deve essere positivo, minore della temperatura minima e con decimale diverso da 0",
+          "related climate": "L'entità climate che vuoi collegare non è valida o inesistente"
+        }
+    }
+}
