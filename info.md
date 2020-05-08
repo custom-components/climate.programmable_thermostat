@@ -1,17 +1,3 @@
-# WHAT'S NEW
-### BIG CHANGES IN THA HOUSE!
-Big changes and NO breaking ones!
-
-What's new:
-- UI setup is landed! Now you can set up everything from UI. (in next releases I'll put in place also the option flow)
-
-What else:
-- Splitting up code in different files to have it more clear
-- Clean up code to remove useless things
-- Logs more clear to let you identify immediatly the instance that is causing the error
-
-UI setup languages available are only English and Italian. If you would like to prepare the JSON with translation in your language it would be appreciated! To do this just copy one of the JSON within the translations folder and prepare your own!
-
 # PROGRAMMABLE THERMOSTAT
 This component is a revision of the official Home Assistant component 'Generic Thermostat' in order to have possibility to have target temperature variable according to a sensor state value.
 
