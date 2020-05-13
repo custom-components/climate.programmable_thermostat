@@ -241,9 +241,11 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             data = {ATTR_ENTITY_ID: self.coolers_entity_ids}
         else:
             _LOGGER.error("climate.%s - No type has been passed to turn_on function", self._name)
-        self._set_hvac_action_on(mode=mode)
-        await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
-        await self.async_update_ha_state()
+
+        if not self._is_device_active_function():
+            self._set_hvac_action_on(mode=mode)
+            await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
+            await self.async_update_ha_state()
 
     async def _async_turn_off(self, mode=None):
         """Turn heater toggleable device off."""
@@ -258,9 +260,11 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
             data = {ATTR_ENTITY_ID: self.coolers_entity_ids}
         else:
             _LOGGER.error("climate.%s - No type has been passed to turn_off function", self._name)
-        self._set_hvac_action_off(mode=mode)
-        await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
-        await self.async_update_ha_state()
+
+        if self._is_device_active_function():
+            self._set_hvac_action_off(mode=mode)
+            await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
+            await self.async_update_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
@@ -395,6 +399,22 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
                 return False
         return True
 
+    def _is_device_active_function(self):
+        """If the toggleable device is currently active."""
+        if self._hvac_mode == HVAC_MODE_HEAT:
+            return self._areAllInState(self.heaters_entity_ids, STATE_ON)
+        elif self._hvac_mode == HVAC_MODE_COOL:
+            return self._areAllInState(self.coolers_entity_ids, STATE_ON)
+        elif self._hvac_mode == HVAC_MODE_HEAT_COOL:
+            if self._check_mode_type == "cool":
+                return self._areAllInState(self.coolers_entity_ids, STATE_ON)
+            elif self._check_mode_type == "heat":
+                return self._areAllInState(self.heaters_entity_ids, STATE_ON)
+            else:
+                return False
+        else:
+            return False
+
     @callback
     def _async_switch_changed(self, entity_id, old_state, new_state):
         """Handle heater switch state changes."""
@@ -482,19 +502,7 @@ class ProgrammableThermostat(ClimateDevice, RestoreEntity):
     @property
     def _is_device_active(self):
         """If the toggleable device is currently active."""
-        if self._hvac_mode == HVAC_MODE_HEAT:
-            return self._areAllInState(self.heaters_entity_ids, STATE_ON)
-        elif self._hvac_mode == HVAC_MODE_COOL:
-            return self._areAllInState(self.coolers_entity_ids, STATE_ON)
-        elif self._hvac_mode == HVAC_MODE_HEAT_COOL:
-            if self._check_mode_type == "cool":
-                return self._areAllInState(self.coolers_entity_ids, STATE_ON)
-            elif self._check_mode_type == "heat":
-                return self._areAllInState(self.heaters_entity_ids, STATE_ON)
-            else:
-                return False
-        else:
-            return False
+        return self._is_device_active_function()
 
     @property
     def supported_features(self):
