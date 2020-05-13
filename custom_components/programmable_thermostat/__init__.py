@@ -5,6 +5,7 @@ Best use is with 'file_restore' that allow to program a temperature profile and 
 """
 import os
 import logging
+import asyncio
 
 from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_IMPORT
