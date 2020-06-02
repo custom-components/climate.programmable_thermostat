@@ -50,10 +50,10 @@ def get_config_flow_schema(config: dict = {}, config_flow_step: int = 0) -> dict
     if not config:
         config = {
             CONF_NAME: DEFAULT_NAME,
-            CONF_HEATER: "input_boolean.f1",
+            CONF_HEATER: "",
             CONF_COOLER: "",
-            CONF_SENSOR: "sensor.mi_t_4c65a8d894a8",
-            CONF_TARGET: "sensor.cameretta",
+            CONF_SENSOR: "",
+            CONF_TARGET: "",
             CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
             CONF_TOLERANCE: DEFAULT_TOLERANCE,
