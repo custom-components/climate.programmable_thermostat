@@ -4,7 +4,7 @@ import logging
 import json
 
 from homeassistant.config_entries import SOURCE_IMPORT
-from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateDevice
+from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.components.climate.const import (
     CURRENT_HVAC_COOL,
     CURRENT_HVAC_HEAT,
@@ -75,7 +75,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     async_add_devices([ProgrammableThermostat(hass, config_entry.data)])
 
 
-class ProgrammableThermostat(ClimateDevice, RestoreEntity):
+class ProgrammableThermostat(ClimateEntity, RestoreEntity):
     """ProgrammableThermostat."""
 
     def __init__(self, hass, config):
