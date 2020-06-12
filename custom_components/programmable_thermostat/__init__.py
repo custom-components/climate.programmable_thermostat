@@ -11,7 +11,6 @@ from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.helpers import discovery
 from homeassistant.util import Throttle
-from integrationhelper.const import CC_STARTUP_VERSION
 from .climate import ProgrammableThermostat
 from .const import (
     VERSION,
@@ -23,9 +22,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup(hass, config):
-    _LOGGER.info(
-        CC_STARTUP_VERSION.format(name=DOMAIN, version=VERSION, issue_link=ISSUE_URL)
-    )
+    _LOGGER.info("Set up of integration %s, version %s, in case of issue open ticket at %s", DOMAIN, VERSION, ISSUE_URL)
     return True
 
 async def async_setup_entry(hass, config_entry):
