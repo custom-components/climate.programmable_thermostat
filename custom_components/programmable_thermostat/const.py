@@ -6,7 +6,7 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_HEAT_COOL)
 
 #Generic
-VERSION = '6.2'
+VERSION = '6.3'
 DOMAIN = 'programmable_thermostat'
 PLATFORM = 'climate'
 ISSUE_URL = 'https://github.com/custom-components/climate.programmable_thermostat/issues'
