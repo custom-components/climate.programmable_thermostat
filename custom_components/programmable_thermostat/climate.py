@@ -203,24 +203,28 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         """this is used to decide what to do, so this function turn off switches and run the function
            that control the temperature."""
         if self._hvac_mode == HVAC_MODE_OFF:
+            _LOGGER.debug("set to off")
             for opmod in self._hvac_list:
                 if opmod is HVAC_MODE_HEAT:
                     await self._async_turn_off(mode="heat")
                 if opmod is HVAC_MODE_COOL:
                     await self._async_turn_off(mode="cool")
         elif self._hvac_mode == HVAC_MODE_HEAT:
+            _LOGGER.debug("set to heat")
             await self._async_control_thermo(mode="heat")
             for opmod in self._hvac_list:
                 if opmod is HVAC_MODE_COOL:
                     await self._async_turn_off(mode="cool")
                     return
         elif self._hvac_mode == HVAC_MODE_COOL:
+            _LOGGER.debug("set to cool")
             await self._async_control_thermo(mode="cool")
             for opmod in self._hvac_list:
                 if opmod is HVAC_MODE_HEAT:
                     await self._async_turn_off(mode="heat")
                     return
         else:
+            _LOGGER.debug("set to auto")
             for opmod in self._hvac_list:
             # Check of self._auto_mode has been added to avoid cooling a room that has just been heated and vice versa
             # LET'S PRESERVE ENERGY!
@@ -260,7 +264,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             data = {ATTR_ENTITY_ID: self.coolers_entity_ids}
         else:
             _LOGGER.error("climate.%s - No type has been passed to turn_off function", self._name)
-
+        self._check_mode_type = mode
         if self._is_device_active_function():
             self._set_hvac_action_off(mode=mode)
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
@@ -405,15 +409,15 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             return self._areAllInState(self.heaters_entity_ids, STATE_ON)
         elif self._hvac_mode == HVAC_MODE_COOL:
             return self._areAllInState(self.coolers_entity_ids, STATE_ON)
-        elif self._hvac_mode == HVAC_MODE_HEAT_COOL:
+        else: #elif self._hvac_mode == HVAC_MODE_HEAT_COOL:
             if self._check_mode_type == "cool":
                 return self._areAllInState(self.coolers_entity_ids, STATE_ON)
             elif self._check_mode_type == "heat":
                 return self._areAllInState(self.heaters_entity_ids, STATE_ON)
             else:
                 return False
-        else:
-            return False
+        """else:
+            return False"""
 
     @callback
     def _async_switch_changed(self, entity_id, old_state, new_state):
