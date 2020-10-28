@@ -106,15 +106,15 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
 
         """Setting up of HVAC list according to the option parameter"""
         options = "{0:b}".format(self._hvac_options).zfill(3)[::-1]
-        if options[0] is "1":
+        if options[0] == "1":
             self._hvac_list.append(HVAC_MODE_OFF)
-        if self.heaters_entity_ids is not None and options[1] is "1":
+        if self.heaters_entity_ids is not None and options[1] == "1":
             self._hvac_list.append(HVAC_MODE_HEAT)
-        if self.coolers_entity_ids is not None and options[1] is "1":
+        if self.coolers_entity_ids is not None and options[1] == "1":
             self._hvac_list.append(HVAC_MODE_COOL)
-        if (self.heaters_entity_ids is not None or self.coolers_entity_ids is not None) and  options[2] is "1":
+        if (self.heaters_entity_ids != None or self.coolers_entity_ids != None) and  options[2] == "1":
             self._hvac_list.append(HVAC_MODE_HEAT_COOL)
-        if self.heaters_entity_ids is None and self.coolers_entity_ids is None:
+        if self.heaters_entity_ids == None and self.coolers_entity_ids == None:
             _LOGGER.error("ERROR on climate.%s, you have to define at least one between heater and cooler", self._name)
         if not self._hvac_list:
             self._hvac_list.append(HVAC_MODE_OFF)
