@@ -12,6 +12,7 @@ from .const import (
     DEFAULT_MIN_TEMP,
     DEFAULT_HVAC_OPTIONS,
     DEFAULT_AUTO_MODE,
+    DEFAULT_MIN_CYCLE_DURATION,
     MAX_HVAC_OPTIONS,
     AUTO_MODE_OPTIONS,
     INITIAL_HVAC_MODE_OPTIONS)
@@ -29,6 +30,7 @@ CONF_INITIAL_HVAC_MODE = 'initial_hvac_mode'
 CONF_RELATED_CLIMATE = 'related_climate'
 CONF_HVAC_OPTIONS = 'hvac_options'
 CONF_AUTO_MODE = 'auto_mode'
+CONF_MIN_CYCLE_DURATION = 'min_cycle_duration'
 SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE)
 
 CLIMATE_SCHEMA = {
@@ -43,7 +45,8 @@ CLIMATE_SCHEMA = {
     vol.Optional(CONF_RELATED_CLIMATE): cv.entity_id,
     vol.Optional(CONF_HVAC_OPTIONS, default=DEFAULT_HVAC_OPTIONS): vol.In(range(MAX_HVAC_OPTIONS)),
     vol.Optional(CONF_AUTO_MODE, default=DEFAULT_AUTO_MODE): vol.In(AUTO_MODE_OPTIONS),
-    vol.Optional(CONF_INITIAL_HVAC_MODE): vol.In(INITIAL_HVAC_MODE_OPTIONS)
+    vol.Optional(CONF_INITIAL_HVAC_MODE): vol.In(INITIAL_HVAC_MODE_OPTIONS),
+    vol.Optional(CONF_MIN_CYCLE_DURATION): cv.positive_time_period
 }
 
 def get_config_flow_schema(config: dict = {}, config_flow_step: int = 0) -> dict:
@@ -60,7 +63,8 @@ def get_config_flow_schema(config: dict = {}, config_flow_step: int = 0) -> dict
             CONF_RELATED_CLIMATE: "",
             CONF_HVAC_OPTIONS: DEFAULT_HVAC_OPTIONS,
             CONF_AUTO_MODE: DEFAULT_AUTO_MODE,
-            CONF_INITIAL_HVAC_MODE: ""
+            CONF_INITIAL_HVAC_MODE: "",
+            CONF_MIN_CYCLE_DURATION: DEFAULT_MIN_CYCLE_DURATION
         }
     if config_flow_step==1:
         return {
@@ -81,7 +85,8 @@ def get_config_flow_schema(config: dict = {}, config_flow_step: int = 0) -> dict
             vol.Optional(CONF_RELATED_CLIMATE, default=config.get(CONF_RELATED_CLIMATE)): str,
             vol.Optional(CONF_HVAC_OPTIONS, default=config.get(CONF_HVAC_OPTIONS)):  vol.In(range(MAX_HVAC_OPTIONS)),
             vol.Optional(CONF_AUTO_MODE, default=config.get(CONF_AUTO_MODE)): vol.In(AUTO_MODE_OPTIONS),
-            vol.Optional(CONF_INITIAL_HVAC_MODE, default=config.get(CONF_INITIAL_HVAC_MODE)): vol.In(INITIAL_HVAC_MODE_OPTIONS)
+            vol.Optional(CONF_INITIAL_HVAC_MODE, default=config.get(CONF_INITIAL_HVAC_MODE)): vol.In(INITIAL_HVAC_MODE_OPTIONS),
+            vol.Optional(CONF_MIN_CYCLE_DURATION, default=config.get(CONF_MIN_CYCLE_DURATION)): str
         }
 
     return {}
