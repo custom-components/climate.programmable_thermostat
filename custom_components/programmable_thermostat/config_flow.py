@@ -6,12 +6,18 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
 import uuid
+import re
 
+from datetime import timedelta, datetime
 from homeassistant.const import (
     CONF_NAME,
     EVENT_HOMEASSISTANT_START
 )
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    CONFIGFLOW_VERSION,
+    REGEX_STRING
+)
 from .config_schema import (
     get_config_flow_schema,
     CONF_HEATER,
@@ -21,7 +27,8 @@ from .config_schema import (
     CONF_MAX_TEMP,
     CONF_TARGET,
     CONF_TOLERANCE,
-    CONF_RELATED_CLIMATE
+    CONF_RELATED_CLIMATE,
+    CONF_MIN_CYCLE_DURATION
 )
 
 
@@ -31,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 class ProgrammableThermostatConfigFlow(config_entries.ConfigFlow):
     """Programmable Thermostat config flow."""
 
-    VERSION = 1
+    VERSION = CONFIGFLOW_VERSION
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
@@ -94,13 +101,14 @@ class ProgrammableThermostatConfigFlow(config_entries.ConfigFlow):
         if user_input is not None and user_input != {}:
             if self.are_third_step_data_valid(user_input):
                 self._data.update(user_input)
+                self._data[CONF_MIN_CYCLE_DURATION] = {'seconds': self.string_to_timedelta(self._data[CONF_MIN_CYCLE_DURATION]).seconds}
                 final_data = {}
                 for key in self._data.keys():
                     if self._data[key] != "" and self._data[key] != []:
                         final_data.update({key: self._data[key]})
                 _LOGGER.info("Data are valid. Proceed with entity creation. - %s", final_data)
                 return self.async_create_entry(title=final_data["name"], data=final_data)
-            _LOGGER.warning("Wrong date have been input in the first form")
+            _LOGGER.warning("Wrong date have been input in the last form")
             return await self._show_config_form_final(user_input)
         return await self._show_config_form_final(user_input)
 
@@ -148,7 +156,14 @@ class ProgrammableThermostatConfigFlow(config_entries.ConfigFlow):
     def are_third_step_data_valid(self, user_input) -> bool:
         if user_input[CONF_RELATED_CLIMATE] != "":
             if not self.are_entities_valid(user_input, CONF_RELATED_CLIMATE) or not user_input[CONF_RELATED_CLIMATE][:8:] == "climate." :
-                self._errors["base"]="related climate"
+                self._errors["base"] = "related climate"
+                return False
+        if user_input[CONF_MIN_CYCLE_DURATION] != "":
+            check = re.match(REGEX_STRING, user_input[CONF_MIN_CYCLE_DURATION])
+            _LOGGER.debug("check: %s", check)
+            if check == None:
+                _LOGGER.debug("enter in regex")
+                self._errors["base"] = "duration error"
                 return False
         return True
 
@@ -167,6 +182,18 @@ class ProgrammableThermostatConfigFlow(config_entries.ConfigFlow):
         if string is None or string == "":
             return []
         return list(map(lambda x: x.strip(), string.split(",")))
+
+    def string_to_timedelta(self, string):
+        """ to convert a string with format hh:mm:ss or mm:ss into a timedelta data """
+        string = re.match(REGEX_STRING, string)
+        if string is None or string == "":
+            return []
+        string = string.groupdict()
+        time_params = {}
+        for name in string.keys():
+            if string[name]:
+                time_params[name] = int(string[name])
+        return timedelta(**time_params)
 
     """ SHOW CONFIGURATION.YAML ENTITIES """
     async def async_step_import(self, user_input):
