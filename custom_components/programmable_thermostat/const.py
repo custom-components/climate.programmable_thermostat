@@ -6,10 +6,11 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_HEAT_COOL)
 
 #Generic
-VERSION = '6.4'
+VERSION = '7.0'
 DOMAIN = 'programmable_thermostat'
 PLATFORM = 'climate'
 ISSUE_URL = 'https://github.com/custom-components/climate.programmable_thermostat/issues'
+CONFIGFLOW_VERSION = 2
 
 
 #Defaults
@@ -19,8 +20,10 @@ DEFAULT_MAX_TEMP = 40
 DEFAULT_MIN_TEMP = 5
 DEFAULT_HVAC_OPTIONS = 7
 DEFAULT_AUTO_MODE = 'all'
+DEFAULT_MIN_CYCLE_DURATION = ''
 
 #Others
 MAX_HVAC_OPTIONS = 8
 AUTO_MODE_OPTIONS = ['all', 'heating', 'cooling']
 INITIAL_HVAC_MODE_OPTIONS = ['', HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_HEAT_COOL]
+REGEX_STRING = r'((?P<hours>\d+?):(?=(\d+?:\d+?)))?((?P<minutes>\d+?):)?((?P<seconds>\d+?))?$'
