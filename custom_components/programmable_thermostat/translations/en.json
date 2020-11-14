@@ -29,7 +29,8 @@
                     "initial_hvac_mode": "Startup mode",
                     "related_climate": "Climate entity connect to this one (entity name)",
                     "hvac_options": "Allowed modes",
-                    "auto_mode": "Automatic mode type"
+                    "auto_mode": "Automatic mode type",
+                    "min_cycle_duration": "Minimum cycle duration (hh:mm:ss or mm:ss)"
                 }
             }
         },
@@ -42,7 +43,8 @@
           "target wrong": "Plannned temperature sensor is not existing into Home Assistant",
           "min_temp": "Min temperature has to be lower then max one",
           "tolerance": "Activation delta has to be positive, lower then min temperature and with tenth different from 0",
-          "related climate": "Climate entity that you want to connect is not valid or not existing"
+          "related climate": "Climate entity that you want to connect is not valid or not existing",
+          "duration error": "Time delta format is wrong. accepted format are hh:mm:ss or mm:ss"
         }
     }
 }
