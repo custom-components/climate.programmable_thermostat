@@ -3,6 +3,7 @@ import asyncio
 import logging
 import json
 
+from homeassistant.helpers.reload import async_setup_reload_service
 from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.components.climate.const import (
@@ -30,7 +31,7 @@ from homeassistant.core import DOMAIN as HA_DOMAIN, callback
 from homeassistant.helpers import condition
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import (
-    async_track_state_change,
+    async_track_state_change_event,
     async_track_time_interval
 )
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -52,6 +53,7 @@ from .config_schema import(
     CONF_RELATED_CLIMATE,
     CONF_HVAC_OPTIONS,
     CONF_AUTO_MODE,
+    CONF_MIN_CYCLE_DURATION,
     SUPPORT_FLAGS
 )
 
@@ -67,11 +69,13 @@ async def async_setup_platform(hass, config, async_add_entities,
                                discovery_info=None):
     """Add ProgrammableThermostat entities from configuration.yaml."""
     _LOGGER.debug("Setup entity coming from configuration.yaml named: %s", config.get(CONF_NAME))
+    await async_setup_reload_service(hass, DOMAIN, PLATFORM)
     async_add_entities([ProgrammableThermostat(hass, config)])
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
     """Add ProgrammableThermostat entities from configuration flow."""
     _LOGGER.debug("setup entity-config_entry_data=%s",config_entry.data)
+    await async_setup_reload_service(hass, DOMAIN, PLATFORM)
     async_add_devices([ProgrammableThermostat(hass, config_entry.data)])
 
 
@@ -96,7 +100,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         self._hvac_options = config.get(CONF_HVAC_OPTIONS)
         self._auto_mode = config.get(CONF_AUTO_MODE)
         self._hvac_list = []
-
+        self.min_cycle_duration = config.get(CONF_MIN_CYCLE_DURATION)
         self._target_temp = self._getFloat(self._getStateSafe(self.target_entity_id), None)
         self._restore_temp = self._target_temp
         self._cur_temp = self._getFloat(self._getStateSafe(self.sensor_entity_id), self._target_temp)
@@ -135,19 +139,24 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         await super().async_added_to_hass()
 
         # Add listener
-        async_track_state_change(
-            self.hass, self.sensor_entity_id, self._async_sensor_changed)
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass, self.sensor_entity_id, self._async_sensor_changed))
         if self._hvac_mode == HVAC_MODE_HEAT:
-            async_track_state_change(
-                self.hass, self.heaters_entity_ids, self._async_switch_changed)
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, self.heaters_entity_ids, self._async_switch_changed))
         elif self._hvac_mode == HVAC_MODE_COOL:
-            async_track_state_change(
-                self.hass, self.coolers_entity_ids, self._async_switch_changed)
-        async_track_state_change(
-            self.hass, self.target_entity_id, self._async_target_changed)
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, self.coolers_entity_ids, self._async_switch_changed))
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass, self.target_entity_id, self._async_target_changed))
         if self._related_climate is not None:
-            async_track_state_change(
-                self.hass, self._related_climate, self._async_switch_changed)
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, self._related_climate, self._async_switch_changed))
 
         @callback
         def _async_startup(event):
@@ -172,7 +181,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             if self._target_temp is None:
                 # If we have a previously saved temperature
                 if old_state.attributes.get(ATTR_TEMPERATURE) is None:
-                    target_entity_state = self._getStateSafe(target_entity_id)
+                    target_entity_state = self._getStateSafe(self.target_entity_id)
                     if target_entity_state is not None:
                         self._target_temp = float(target_entity_state)
                     else:
@@ -206,22 +215,22 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             _LOGGER.debug("set to off")
             for opmod in self._hvac_list:
                 if opmod is HVAC_MODE_HEAT:
-                    await self._async_turn_off(mode="heat")
+                    await self._async_turn_off(mode="heat", forced=True)
                 if opmod is HVAC_MODE_COOL:
-                    await self._async_turn_off(mode="cool")
+                    await self._async_turn_off(mode="cool", forced=True)
         elif self._hvac_mode == HVAC_MODE_HEAT:
             _LOGGER.debug("set to heat")
             await self._async_control_thermo(mode="heat")
             for opmod in self._hvac_list:
                 if opmod is HVAC_MODE_COOL:
-                    await self._async_turn_off(mode="cool")
+                    await self._async_turn_off(mode="cool", forced=True)
                     return
         elif self._hvac_mode == HVAC_MODE_COOL:
             _LOGGER.debug("set to cool")
             await self._async_control_thermo(mode="cool")
             for opmod in self._hvac_list:
                 if opmod is HVAC_MODE_HEAT:
-                    await self._async_turn_off(mode="heat")
+                    await self._async_turn_off(mode="heat", forced=True)
                     return
         else:
             _LOGGER.debug("set to auto")
@@ -246,12 +255,12 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         else:
             _LOGGER.error("climate.%s - No type has been passed to turn_on function", self._name)
 
-        if not self._is_device_active_function():
+        if not self._is_device_active_function(forced=False) and self.is_active_long_enough(mode=mode):
             self._set_hvac_action_on(mode=mode)
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
             await self.async_update_ha_state()
 
-    async def _async_turn_off(self, mode=None):
+    async def _async_turn_off(self, mode=None, forced=False):
         """Turn heater toggleable device off."""
         if self._related_climate is not None:
             related_climate_hvac_action = self.hass.states.get(self._related_climate).attributes['hvac_action']
@@ -265,7 +274,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         else:
             _LOGGER.error("climate.%s - No type has been passed to turn_off function", self._name)
         self._check_mode_type = mode
-        if self._is_device_active_function():
+        if self._is_device_active_function(forced=forced) and self.is_active_long_enough(mode=mode):
             self._set_hvac_action_off(mode=mode)
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
             await self.async_update_ha_state()
@@ -286,7 +295,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             return
         await self.control_system_mode()
         # Ensure we update the current operation after changing the mode
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
@@ -297,16 +306,18 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         await self.control_system_mode()
         await self.async_update_ha_state()
 
-    async def _async_sensor_changed(self, entity_id, old_state, new_state):
+    async def _async_sensor_changed(self, event):
         """Handle temperature changes."""
+        new_state = event.data.get("new_state")
         if new_state is None:
             return
         self._async_update_temp(new_state.state)
         await self.control_system_mode()
         await self.async_update_ha_state()
 
-    async def _async_target_changed(self, entity_id, old_state, new_state):
+    async def _async_target_changed(self, event):
         """Handle temperature changes in the program."""
+        new_state = event.data.get("new_state")
         if new_state is None:
             return
         self._restore_temp = float(new_state.state)
@@ -318,10 +329,10 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
     async def _async_control_thermo(self, mode=None):
         """Check if we need to turn heating on or off."""
         if self._cur_temp is None:
-            _LOGGER.warn("climate.%s - Abort _async_control_thermo as _cur_temp is None", self._name)
+            _LOGGER.info("climate.%s - Abort _async_control_thermo as _cur_temp is None", self._name)
             return
         if self._target_temp is None:
-            _LOGGER.warn("climate.%s - Abort _async_control_thermo as _target_temp is None", self._name)
+            _LOGGER.info("climate.%s - Abort _async_control_thermo as _target_temp is None", self._name)
             return
 
         if mode == "heat":
@@ -362,11 +373,32 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
            This has been split form turn_off function since this will allow to make dedicated calls.
            For the other CURRENT_HVAC_*, this is not needed becasue they work perfectly at the turn_on."""
         # This if condition is necessary to correctly manage the action for the different modes.
+        _LOGGER.debug("climate.%s - mode=%s \r\ntarget=%s \r\n current=%s", self._name, mode, self._target_temp, self._cur_temp)
+        if mode == "heat":
+            delta = self._target_temp - self._cur_temp
+            entities = self.coolers_entity_ids
+            mode_2 = "cool"
+        elif mode == "cool":
+            delta = self._cur_temp - self._target_temp
+            entities = self.heaters_entity_ids
+            mode_2 = "heat"
+        else:
+            _LOGGER.error("climate.%s - No type has been passed to control_thermo function", self._name)
+            mode_2 = None
+        _LOGGER.debug("climate.%s - delta=%s", self._name, delta)
         if (((mode == "cool" and not self._hvac_mode == HVAC_MODE_HEAT) or \
            (mode == "heat" and not self._hvac_mode == HVAC_MODE_COOL)) and \
            not self._hvac_mode == HVAC_MODE_HEAT_COOL):
             self._hvac_action = CURRENT_HVAC_OFF
             _LOGGER.info("climate.%s - new action %s", self._name, self._hvac_action)
+        elif self._hvac_mode == HVAC_MODE_HEAT_COOL and delta <= 0:
+            self._hvac_action = CURRENT_HVAC_OFF
+            _LOGGER.info("climate.%s - new action %s", self._name, self._hvac_action)
+            if abs(delta) >= self._tolerance and entities != None:
+                self._set_hvac_action_on(mode=mode_2)
+        else:
+            _LOGGER.error("climate.%s - Error during set of HVAC_ACTION", self._name)
+
 
     def _set_hvac_action_on(self, mode=None):
         """This is used to set CURRENT_HVAC_* according to the mode that is running."""
@@ -403,28 +435,68 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
                 return False
         return True
 
-    def _is_device_active_function(self):
+    def _is_device_active_function(self, forced):
         """If the toggleable device is currently active."""
-        if self._hvac_mode == HVAC_MODE_HEAT:
-            return self._areAllInState(self.heaters_entity_ids, STATE_ON)
-        elif self._hvac_mode == HVAC_MODE_COOL:
-            return self._areAllInState(self.coolers_entity_ids, STATE_ON)
-        else: #elif self._hvac_mode == HVAC_MODE_HEAT_COOL:
-            if self._check_mode_type == "cool":
-                return self._areAllInState(self.coolers_entity_ids, STATE_ON)
-            elif self._check_mode_type == "heat":
+        _LOGGER.debug("climate.%s - \r\nheaters: %s \r\ncoolers: %s \r\n_check_mode_type: %s \r\n_hvac_mode: %s \r\nforced: %s", self._name, self.heaters_entity_ids, self.coolers_entity_ids, self._check_mode_type, self._hvac_mode, forced)
+        if not forced:
+            _LOGGER.debug("climate.%s - 410- enter in classic mode: %s", self._name, forced)
+            if self._hvac_mode == HVAC_MODE_HEAT_COOL:
+                if self._check_mode_type == "cool":
+                    return self._areAllInState(self.coolers_entity_ids, STATE_ON)
+                elif self._check_mode_type == "heat":
+                    return self._areAllInState(self.heaters_entity_ids, STATE_ON)
+                else:
+                    return False
+            elif self._hvac_mode == HVAC_MODE_HEAT:
+                _LOGGER.debug("climate.%s - 419 - heaters: %s", self._name, self.heaters_entity_ids)
                 return self._areAllInState(self.heaters_entity_ids, STATE_ON)
+            elif self._hvac_mode == HVAC_MODE_COOL:
+                _LOGGER.debug("climate.%s - 422 - coolers: %s", self._name, self.coolers_entity_ids)
+                return self._areAllInState(self.coolers_entity_ids, STATE_ON)
             else:
                 return False
-        """else:
-            return False"""
+                """if self._check_mode_type == "cool":
+                    return self._areAllInState(self.coolers_entity_ids, STATE_ON)
+                elif self._check_mode_type == "heat":
+                    return self._areAllInState(self.heaters_entity_ids, STATE_ON)
+                else:
+                    return False"""
+        else:
+            _LOGGER.debug("climate.%s - 433- enter in forced mode: %s", self._name, forced)
+            if self._check_mode_type == "heat":
+                _LOGGER.debug("climate.%s - 435 - heaters: %s", self._name, self.heaters_entity_ids)
+                return self._areAllInState(self.heaters_entity_ids, STATE_ON)
+            elif self._check_mode_type == "cool":
+                _LOGGER.debug("climate.%s - 438 - coolers: %s", self._name, self.coolers_entity_ids)
+                return self._areAllInState(self.coolers_entity_ids, STATE_ON)
+            else:
+                return False
+
+    def is_active_long_enough(self, mode=None):
+        """ This function is to check if the heater/cooler has been active long enough """
+        if not self.min_cycle_duration:
+            return True
+        if self._is_device_active:
+            current_state = STATE_ON
+        else:
+            current_state = STATE_OFF
+        if mode == "heat":
+            for entity in self.heaters_entity_ids:
+                return condition.state(self.hass, entity, current_state, self.min_cycle_duration)
+        elif mode == "cool":
+            for entity in self.coolers_entity_ids:
+                return condition.state(self.hass, entity, current_state, self.min_cycle_duration)
+        else:
+            _LOGGER.error("Wrong mode have been passed to function is_active_long_enough")
+        return True
 
     @callback
-    def _async_switch_changed(self, entity_id, old_state, new_state):
+    def _async_switch_changed(self, event):
         """Handle heater switch state changes."""
+        new_state = event.data.get("new_state")
         if new_state is None:
             return
-        self.async_schedule_update_ha_state()
+        self.async_write_ha_state()
 
     @callback
     def _async_update_temp(self, state):
@@ -438,7 +510,10 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
     def _async_restore_program_temp(self):
         """Update thermostat with latest state from sensor to have back automatic value."""
         try:
-            self._target_temp = self._restore_temp
+            if self._restore_temp is not None:
+                self._target_temp = self._restore_temp
+            else:
+                self._target_temp = self._getFloat(self._getStateSafe(self.target_entity_id), None)
         except ValueError as ex:
             _LOGGER.warning("climate.%s - Unable to restore program temperature from sensor: %s", self._name, ex)
 
@@ -506,7 +581,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
     @property
     def _is_device_active(self):
         """If the toggleable device is currently active."""
-        return self._is_device_active_function()
+        return self._is_device_active_function(forced=False)
 
     @property
     def supported_features(self):
