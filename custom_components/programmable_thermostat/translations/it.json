@@ -29,7 +29,8 @@
                     "initial_hvac_mode": "Modalità di lavoro all'avvio",
                     "related_climate": "Altra entità climate legata a questa (nome entità)",
                     "hvac_options": "Modalità di lavoro attive",
-                    "auto_mode": "Modalità di lavoro in automatico"
+                    "auto_mode": "Modalità di lavoro in automatico",
+                    "min_cycle_duration": "Durata minima del ciclo (hh:mm:ss o mm:ss)"
                 }
             }
         },
@@ -42,7 +43,8 @@
           "target wrong": "L'entità del programma di temperatura non esiste in Home Assistant",
           "min_temp": "La temperatura minima deve essere minore della massima",
           "tolerance": "Il delta di attivazione deve essere positivo, minore della temperatura minima e con decimale diverso da 0",
-          "related climate": "L'entità climate che vuoi collegare non è valida o inesistente"
+          "related climate": "L'entità climate che vuoi collegare non è valida o inesistente",
+          "duration error": "Il delta di tempo definito non è valido. I formati accettati sono hh:mm:ss or mm:ss"
         }
     }
 }
