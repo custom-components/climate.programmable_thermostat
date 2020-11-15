@@ -29,7 +29,8 @@ climate:
     related_climate: climate.room_2
     hvac_options: 7
     auto_mode: all
-    
+    min_cycle_duration:
+      seconds: 20
 ```
 
 Field | Value | Necessity | Comments
@@ -47,6 +48,7 @@ initial_hvac_mode | `heat_cool`, `heat`, `cool`, `off` | Optional | If not set, 
 related_climate |  | Optional | To be used if the climate object is a slave of an other one. below 'Related climate' chapter a description.
 hvac_options | 7 | Optional | This define which combination of manual-auto-off options you want to active. Refer to chapter below for the value.
 auto_mode | `all`, `heating`, `cooling` | Optional | This allows to limit the the heating/cooling function with HVAC mode HEAT_COOL.
+min_cycle_duration |  | Optional | TIMEDELTA type. This will allow to protect devices that request a minimum type of work/rest before changing status. On this you have to define hours, minutes, seconds as son elements.
 
 ## SPECIFICITIES
 ### TARGET TEMPERATURE SENSOR
