@@ -96,6 +96,9 @@ You can find more info on that [here][3]
 ***
 Everything is available through HACS.
 
+##### CREDITS
+Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+
 ***
 ![logo][2]
 
