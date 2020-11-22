@@ -399,7 +399,6 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         else:
             _LOGGER.error("climate.%s - Error during set of HVAC_ACTION", self._name)
 
-
     def _set_hvac_action_on(self, mode=None):
         """This is used to set CURRENT_HVAC_* according to the mode that is running."""
         if mode == "heat":
