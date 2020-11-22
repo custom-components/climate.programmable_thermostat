@@ -101,7 +101,7 @@ class ProgrammableThermostatConfigFlow(config_entries.ConfigFlow):
         if user_input is not None and user_input != {}:
             if self.are_third_step_data_valid(user_input):
                 self._data.update(user_input)
-                self._data[CONF_MIN_CYCLE_DURATION] = {'seconds': self.string_to_timedelta(self._data[CONF_MIN_CYCLE_DURATION]).seconds}
+                self._data[CONF_MIN_CYCLE_DURATION] = self.string_to_timedelta(self._data[CONF_MIN_CYCLE_DURATION])
                 final_data = {}
                 for key in self._data.keys():
                     if self._data[key] != "" and self._data[key] != []:
