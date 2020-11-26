@@ -103,7 +103,6 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         self.min_cycle_duration = config.get(CONF_MIN_CYCLE_DURATION)
         if type(self.min_cycle_duration) == type({}):
             self.dict_to_timedelta()
-        _LOGGER.debug("climate.%s - type_min_cy_temp=%s", self.name, type(self.min_cycle_duration))
         self._target_temp = self._getFloat(self._getStateSafe(self.target_entity_id), None)
         self._restore_temp = self._target_temp
         self._cur_temp = self._getFloat(self._getStateSafe(self.sensor_entity_id), self._target_temp)
