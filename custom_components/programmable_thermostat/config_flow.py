@@ -189,11 +189,7 @@ class ProgrammableThermostatConfigFlow(config_entries.ConfigFlow):
         if string is None or string == "":
             return []
         string = string.groupdict()
-        time_params = {}
-        for name in string.keys():
-            if string[name]:
-                time_params[name] = int(string[name])
-        return timedelta(**time_params)
+        return string
 
     """ SHOW CONFIGURATION.YAML ENTITIES """
     async def async_step_import(self, user_input):
