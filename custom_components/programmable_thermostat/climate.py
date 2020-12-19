@@ -220,6 +220,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
                     await self._async_turn_off(mode="heat", forced=True)
                 if opmod is HVAC_MODE_COOL:
                     await self._async_turn_off(mode="cool", forced=True)
+            self._hvac_action = CURRENT_HVAC_OFF
         elif self._hvac_mode == HVAC_MODE_HEAT:
             _LOGGER.debug("set to heat")
             await self._async_control_thermo(mode="heat")
