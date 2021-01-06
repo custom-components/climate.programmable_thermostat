@@ -96,7 +96,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         self._initial_hvac_mode = config.get(CONF_INITIAL_HVAC_MODE)
         self.target_entity_id = config.get(CONF_TARGET)
         self._unit = hass.config.units.temperature_unit
-        self._related_climate = config.get(CONF_RELATED_CLIMATE)
+        self._related_climate = self._getEntityList(config.get(CONF_RELATED_CLIMATE))
         self._hvac_options = config.get(CONF_HVAC_OPTIONS)
         self._auto_mode = config.get(CONF_AUTO_MODE)
         self._hvac_list = []
@@ -156,9 +156,10 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             async_track_state_change_event(
                 self.hass, self.target_entity_id, self._async_target_changed))
         if self._related_climate is not None:
-            self.async_on_remove(
-                async_track_state_change_event(
-                    self.hass, self._related_climate, self._async_switch_changed))
+            for _related_entity in self._related_climate:
+                self.async_on_remove(
+                    async_track_state_change_event(
+                        self.hass, _related_entity, self._async_switch_changed))
 
         @callback
         def _async_startup(event):
@@ -266,10 +267,11 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
     async def _async_turn_off(self, mode=None, forced=False):
         """Turn heater toggleable device off."""
         if self._related_climate is not None:
-            related_climate_hvac_action = self.hass.states.get(self._related_climate).attributes['hvac_action']
-            if related_climate_hvac_action == CURRENT_HVAC_HEAT or related_climate_hvac_action == CURRENT_HVAC_COOL:
-                _LOGGER.info("climate.%s - Master climate object action is %s, so no action taken.", self._name, related_climate_hvac_action)
-                return
+            for _climate in self._related_climate:
+                related_climate_hvac_action = self.hass.states.get(_climate).attributes['hvac_action']
+                if related_climate_hvac_action == CURRENT_HVAC_HEAT or related_climate_hvac_action == CURRENT_HVAC_COOL:
+                    _LOGGER.info("climate.%s - Master climate object action is %s, so no action taken.", self._name, related_climate_hvac_action)
+                    return
         if mode == "heat":
             data = {ATTR_ENTITY_ID: self.heaters_entity_ids}
         elif mode == "cool":
