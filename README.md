@@ -89,6 +89,11 @@ bit3 - AUTOMATIC | bit2 - MANUAL | bit1 - OFF | RESULT | Meaning
 1 | 1 | 0 | 6 | AUTOMATIC and MANUAL
 1 | 1 | 1 | 7 | DEAFAULT - Full mode, you will have active all the options.
 
+### HEATERS AND COOLER SPECIFITIES
+From version 7.6 you will be able to set `heaters` and `coolers` to the same list and you'll get the correct way of work in manual mode.
+This means that `heat` and `cool` mode will work correctly with the same list, but `heat_cool` mode will not (otherwise you will not be able to switch the real device between the 2 modes).
+My suggestion is to set `hvac_options: 3` to remove the auto mode.
+
 ## NOTE
 This component has been developed for the bigger project of building a smart thermostat using Home Assistant and way cheeper then the commercial ones.
 You can find more info on that [here][3]
