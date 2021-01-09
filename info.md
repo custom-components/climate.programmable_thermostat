@@ -1,14 +1,6 @@
 # PROGRAMMABLE THERMOSTAT
 This component is a revision of the official Home Assistant component 'Generic Thermostat' in order to have possibility to have target temperature variable according to a sensor state value.
 
-## HOW TO INSTALL
-Use HACS to install the custom component and configure it through the user interface (settings/integration) to have easy and smooth usage.
-
-If you are for the manual method:
-Just copy paste the content of the `climate.programmable_thermostat/custom_components` folder in your `config/custom_components` directory.
-
-As example you will get the '.py' file in the following path: `/config/custom_components/programmable_thermostat/climate.py`.
-
 ## EXAMPLE OF SETUP
 Config flow is available, so just configure all the entities you want through the user interface.
 
@@ -89,15 +81,14 @@ bit3 - AUTOMATIC | bit2 - MANUAL | bit1 - OFF | RESULT | Meaning
 1 | 1 | 0 | 6 | AUTOMATIC and MANUAL
 1 | 1 | 1 | 7 | DEAFAULT - Full mode, you will have active all the options.
 
+### HEATERS AND COOLER SPECIFITIES
+From version 7.6 you will be able to set `heaters` and `coolers` to the same list and you'll get the correct way of work in manual mode.
+This means that `heat` and `cool` mode will work correctly with the same list, but `heat_cool` mode will not (otherwise you will not be able to switch the real device between the 2 modes).
+My suggestion is to set `hvac_options: 3` to remove the auto mode.
+
 ## NOTE
 This component has been developed for the bigger project of building a smart thermostat using Home Assistant and way cheeper then the commercial ones.
 You can find more info on that [here][3]
-
-***
-Everything is available through HACS.
-
-***
-![logo][2]
 
 
 [1]: https://github.com/custom-components/sensor.file_restore
