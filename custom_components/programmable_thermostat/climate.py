@@ -136,6 +136,12 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             self._hvac_mode = HVAC_MODE_OFF
         self._support_flags = SUPPORT_FLAGS
 
+        """ Check if heaters and coolers are the same """
+        if self.heaters_entity_ids == self.coolers_entity_ids:
+            self._are_entities_same = True
+        else:
+            self._are_entities_same = False
+
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
         await super().async_added_to_hass()
@@ -226,14 +232,14 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             _LOGGER.debug("set to heat")
             await self._async_control_thermo(mode="heat")
             for opmod in self._hvac_list:
-                if opmod is HVAC_MODE_COOL:
+                if opmod is HVAC_MODE_COOL and not self._are_entities_same:
                     await self._async_turn_off(mode="cool", forced=True)
                     return
         elif self._hvac_mode == HVAC_MODE_COOL:
             _LOGGER.debug("set to cool")
             await self._async_control_thermo(mode="cool")
             for opmod in self._hvac_list:
-                if opmod is HVAC_MODE_HEAT:
+                if opmod is HVAC_MODE_HEAT and not self._are_entities_same:
                     await self._async_turn_off(mode="heat", forced=True)
                     return
         else:
@@ -263,6 +269,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             self._set_hvac_action_on(mode=mode)
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
             await self.async_update_ha_state()
+
 
     async def _async_turn_off(self, mode=None, forced=False):
         """Turn heater toggleable device off."""
@@ -411,7 +418,10 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             if abs(delta) >= self._tolerance and entities != None:
                 self._set_hvac_action_on(mode=mode_2)
         else:
-            _LOGGER.error("climate.%s - Error during set of HVAC_ACTION", self._name)
+            if self._are_entities_same and not self._is_device_active_function(forced=False):
+                self._hvac_action = CURRENT_HVAC_OFF
+            else:
+                _LOGGER.error("climate.%s - Error during set of HVAC_ACTION", self._name)
 
     def _set_hvac_action_on(self, mode=None):
         """This is used to set CURRENT_HVAC_* according to the mode that is running."""
