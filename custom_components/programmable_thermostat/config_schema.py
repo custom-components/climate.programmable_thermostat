@@ -2,7 +2,8 @@ import voluptuous as vol
 import logging
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.climate.const import (
-    SUPPORT_TARGET_TEMPERATURE)
+    SUPPORT_TARGET_TEMPERATURE
+)
 from homeassistant.const import CONF_NAME, CONF_ENTITIES
 from .const import (
     DOMAIN,
@@ -15,7 +16,10 @@ from .const import (
     DEFAULT_MIN_CYCLE_DURATION,
     MAX_HVAC_OPTIONS,
     AUTO_MODE_OPTIONS,
-    INITIAL_HVAC_MODE_OPTIONS)
+    INITIAL_HVAC_MODE_OPTIONS,
+    INITIAL_HVAC_MODE_OPTIONS_OPTFLOW
+)
+from .helpers import dict_to_string
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,19 +78,38 @@ def get_config_flow_schema(config: dict = {}, config_flow_step: int = 0) -> dict
             vol.Required(CONF_SENSOR, default=config.get(CONF_SENSOR)): str,
             vol.Required(CONF_TARGET, default=config.get(CONF_TARGET)): str
         }
+    elif config_flow_step==4:
+        #identical to step 1 but without NAME (better to not change it since it will break configuration)
+        #this is used for options flow only
+        return {
+            vol.Optional(CONF_HEATER, default=config.get(CONF_HEATER)): str,
+            vol.Optional(CONF_COOLER, default=config.get(CONF_COOLER)): str,
+            vol.Required(CONF_SENSOR, default=config.get(CONF_SENSOR)): str,
+            vol.Required(CONF_TARGET, default=config.get(CONF_TARGET)): str
+        }
     elif config_flow_step==2:
         return {
-            vol.Optional(CONF_MAX_TEMP, default=config.get(CONF_MAX_TEMP)): int,
-            vol.Optional(CONF_MIN_TEMP, default=config.get(CONF_MIN_TEMP)): int,
-            vol.Optional(CONF_TOLERANCE, default=config.get(CONF_TOLERANCE)): float
+            vol.Required(CONF_MAX_TEMP, default=config.get(CONF_MAX_TEMP)): int,
+            vol.Required(CONF_MIN_TEMP, default=config.get(CONF_MIN_TEMP)): int,
+            vol.Required(CONF_TOLERANCE, default=config.get(CONF_TOLERANCE)): float
         }
     elif config_flow_step==3:
         return {
             vol.Optional(CONF_RELATED_CLIMATE, default=config.get(CONF_RELATED_CLIMATE)): str,
-            vol.Optional(CONF_HVAC_OPTIONS, default=config.get(CONF_HVAC_OPTIONS)):  vol.In(range(MAX_HVAC_OPTIONS)),
-            vol.Optional(CONF_AUTO_MODE, default=config.get(CONF_AUTO_MODE)): vol.In(AUTO_MODE_OPTIONS),
+            vol.Required(CONF_HVAC_OPTIONS, default=config.get(CONF_HVAC_OPTIONS)):  vol.In(range(MAX_HVAC_OPTIONS)),
+            vol.Required(CONF_AUTO_MODE, default=config.get(CONF_AUTO_MODE)): vol.In(AUTO_MODE_OPTIONS),
             vol.Optional(CONF_INITIAL_HVAC_MODE, default=config.get(CONF_INITIAL_HVAC_MODE)): vol.In(INITIAL_HVAC_MODE_OPTIONS),
             vol.Optional(CONF_MIN_CYCLE_DURATION, default=config.get(CONF_MIN_CYCLE_DURATION)): str
+        }
+    elif config_flow_step==5:
+        #identical to 3 but with CONF_MIN_CYCLE_DURATION converted in string from dict (necessary since it is always set as null if not used)
+        #this is used for options flow only
+        return {
+            vol.Optional(CONF_RELATED_CLIMATE, default=config.get(CONF_RELATED_CLIMATE)): str,
+            vol.Required(CONF_HVAC_OPTIONS, default=config.get(CONF_HVAC_OPTIONS)):  vol.In(range(MAX_HVAC_OPTIONS)),
+            vol.Required(CONF_AUTO_MODE, default=config.get(CONF_AUTO_MODE)): vol.In(AUTO_MODE_OPTIONS),
+            vol.Optional(CONF_INITIAL_HVAC_MODE, default=config.get(CONF_INITIAL_HVAC_MODE)): vol.In(INITIAL_HVAC_MODE_OPTIONS_OPTFLOW),
+            vol.Optional(CONF_MIN_CYCLE_DURATION, default=dict_to_string(config.get(CONF_MIN_CYCLE_DURATION))): str
         }
 
     return {}
