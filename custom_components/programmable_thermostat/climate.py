@@ -56,6 +56,7 @@ from .config_schema import(
     CONF_MIN_CYCLE_DURATION,
     SUPPORT_FLAGS
 )
+from .helpers import dict_to_timedelta
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,15 +69,20 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(CLIMATE_SCHEMA)
 async def async_setup_platform(hass, config, async_add_entities,
                                discovery_info=None):
     """Add ProgrammableThermostat entities from configuration.yaml."""
-    _LOGGER.debug("Setup entity coming from configuration.yaml named: %s", config.get(CONF_NAME))
+    _LOGGER.info("Setup entity coming from configuration.yaml named: %s", config.get(CONF_NAME))
     await async_setup_reload_service(hass, DOMAIN, PLATFORM)
     async_add_entities([ProgrammableThermostat(hass, config)])
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
     """Add ProgrammableThermostat entities from configuration flow."""
-    _LOGGER.debug("setup entity-config_entry_data=%s",config_entry.data)
+    result = {}
+    if config_entry.options != {}:
+        result = config_entry.options
+    else:
+        result = config_entry.data
+    _LOGGER.info("setup entity-config_entry_data=%s",result)
     await async_setup_reload_service(hass, DOMAIN, PLATFORM)
-    async_add_devices([ProgrammableThermostat(hass, config_entry.data)])
+    async_add_devices([ProgrammableThermostat(hass, result)])
 
 
 class ProgrammableThermostat(ClimateEntity, RestoreEntity):
@@ -102,7 +108,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         self._hvac_list = []
         self.min_cycle_duration = config.get(CONF_MIN_CYCLE_DURATION)
         if type(self.min_cycle_duration) == type({}):
-            self.dict_to_timedelta()
+            self.min_cycle_duration = dict_to_timedelta(self.min_cycle_duration)
         self._target_temp = self._getFloat(self._getStateSafe(self.target_entity_id), None)
         self._restore_temp = self._target_temp
         self._cur_temp = self._getFloat(self._getStateSafe(self.sensor_entity_id), self._target_temp)
@@ -270,7 +276,6 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
             await self.async_update_ha_state()
 
-
     async def _async_turn_off(self, mode=None, forced=False):
         """Turn heater toggleable device off."""
         if self._related_climate is not None:
@@ -362,7 +367,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             if not self._active and None not in (self._cur_temp,
                                                  self._target_temp):
                 self._active = True
-                _LOGGER.info("climate.%s - Obtained current and target temperature. "
+                _LOGGER.debug("climate.%s - Obtained current and target temperature. "
                              "Generic thermostat active. %s, %s", self._name,
                              self._cur_temp, self._target_temp)
 
@@ -371,23 +376,14 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
 
             if delta <= 0:
                 if not self._areAllInState(entities, STATE_OFF):
-                    _LOGGER.info("Turning off %s", entities)
+                    _LOGGER.debug("Turning off %s", entities)
                     await self._async_turn_off(mode=mode)
                 self._set_hvac_action_off(mode=mode)
             elif delta >= self._tolerance:
                 self._set_hvac_action_on(mode=mode)
                 if not self._areAllInState(entities, STATE_ON):
-                    _LOGGER.info("Turning on %s", entities)
+                    _LOGGER.debug("Turning on %s", entities)
                     await self._async_turn_on(mode=mode)
-
-    def dict_to_timedelta(self):
-        time_params = {}
-        string = self.min_cycle_duration
-        for name in string.keys():
-            if string[name]:
-                time_params[name] = int(string[name])
-        self.min_cycle_duration =  timedelta(**time_params)
-        return True
 
     def _set_hvac_action_off(self, mode=None):
         """This is used to set CURRENT_HVAC_OFF on the climate integration.
@@ -411,10 +407,10 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
            (mode == "heat" and not self._hvac_mode == HVAC_MODE_COOL)) and \
            not self._hvac_mode == HVAC_MODE_HEAT_COOL):
             self._hvac_action = CURRENT_HVAC_OFF
-            _LOGGER.info("climate.%s - new action %s", self._name, self._hvac_action)
+            _LOGGER.debug("climate.%s - new action %s", self._name, self._hvac_action)
         elif self._hvac_mode == HVAC_MODE_HEAT_COOL and delta <= 0:
             self._hvac_action = CURRENT_HVAC_OFF
-            _LOGGER.info("climate.%s - new action %s", self._name, self._hvac_action)
+            _LOGGER.debug("climate.%s - new action %s", self._name, self._hvac_action)
             if abs(delta) >= self._tolerance and entities != None:
                 self._set_hvac_action_on(mode=mode_2)
         else:
