@@ -8,12 +8,16 @@ import logging
 import asyncio
 
 from homeassistant import config_entries
-from homeassistant.config_entries import SOURCE_IMPORT
+from homeassistant.config_entries import (
+    SOURCE_IMPORT,
+    ConfigEntry
+)
 from homeassistant.helpers import discovery
 from homeassistant.util import Throttle
 from .climate import ProgrammableThermostat
 from .const import (
     VERSION,
+    CONFIGFLOW_VERSION,
     DOMAIN,
     PLATFORM,
     ISSUE_URL
@@ -39,15 +43,32 @@ async def async_setup_entry(hass, config_entry):
 
 async def async_unload_entry(hass, config_entry):
     """Unload a config entry."""
-    unload_ok = await asyncio.gather(hass.config_entries.async_forward_entry_unload(config_entry, PLATFORM))
-
-    hass.data[DOMAIN][config_entry.entry_id]["undo_update_listener"]()
-    if unload_ok:
-        _LOGGER.info("Removed ProgrammableThermostat entity, entry_id: %s", config_entry.entry_id)
-        hass.data[DOMAIN].pop(config_entry.entry_id)
-
-    return unload_ok
+    _LOGGER.debug("async_unload_entry: %s", config_entry)
+    await asyncio.gather(hass.config_entries.async_forward_entry_unload(config_entry, PLATFORM))
+    return True
 
 async def update_listener(hass, config_entry):
     """Handle options update."""
+    _LOGGER.debug("update_listener: %s", config_entry)
     await hass.config_entries.async_reload(config_entry.entry_id)
+
+async def async_migrate_entry(hass, config_entry: ConfigEntry):
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating from version %s to version %s", config_entry.version, CONFIGFLOW_VERSION)
+
+    new_data = {**config_entry.data}
+    new_options = {**config_entry.options}
+
+    if config_entry.version <= 2:
+        _LOGGER.warning("Impossible to migrate config version from version %s to version %s.\r\nPlease consider to delete and recreate the entry.", config_entry.version, CONFIGFLOW_VERSION)
+        return False
+    elif config_entry.version == 3:
+        config_entry.unique_id = config_entry.data["unique_id"]
+        del new_data["unique_id"]
+        config_entry.version = CONFIGFLOW_VERSION
+        config_entry.data = {**new_data}
+        _LOGGER.info("Migration of entry %s done to version %s", config_entry.title, config_entry.version)
+        return True
+
+    _LOGGER.info("Migration not required")
+    return True
