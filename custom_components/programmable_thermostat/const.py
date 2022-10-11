@@ -28,3 +28,8 @@ AUTO_MODE_OPTIONS = ['all', 'heating', 'cooling']
 INITIAL_HVAC_MODE_OPTIONS = ['', HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_HEAT_COOL]
 INITIAL_HVAC_MODE_OPTIONS_OPTFLOW = ['null', HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_HEAT_COOL]
 REGEX_STRING = r'((?P<hours>\d+?):(?=(\d+?:\d+?)))?((?P<minutes>\d+?):)?((?P<seconds>\d+?))?$'
+
+#Attributes
+ATTR_HEATER_IDS = "heater_ids"
+ATTR_COOLER_IDS = "cooler_ids"
+ATTR_SENSOR_ID = "sensor_id"
