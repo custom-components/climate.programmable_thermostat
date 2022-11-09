@@ -38,7 +38,10 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .const import (
     VERSION,
     DOMAIN,
-    PLATFORM
+    PLATFORM,
+    ATTR_HEATER_IDS,
+    ATTR_COOLER_IDS,
+    ATTR_SENSOR_ID
 )
 from .config_schema import(
     CLIMATE_SCHEMA,
@@ -614,3 +617,14 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         Need to be one of CURRENT_HVAC_*.
         """
         return self._hvac_action
+
+    @property
+    def extra_state_attributes(self):
+        """Return entity specific state attributes to be saved. """
+        attributes = {}
+
+        attributes[ATTR_HEATER_IDS] = self.heaters_entity_ids
+        attributes[ATTR_COOLER_IDS] = self.coolers_entity_ids
+        attributes[ATTR_SENSOR_ID] = self.sensor_entity_id
+
+        return attributes
