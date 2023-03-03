@@ -131,4 +131,4 @@ jobs:
       - name: Run pre-commit
         run: |
           . venv/bin/activate
-          pre-commit run -a --show-diff-on-failure
+          pre-commit run -a
