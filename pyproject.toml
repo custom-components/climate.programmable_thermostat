@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+
+[tool.codespell]
+ignore-words-list = """
+master,
+slave,
+hass"""
+skip = """
+./.*,./assets/*,./data/*,*.svg,*.css,*.json,*.js
+"""
+quiet-level=2
+ignore-regex = '\\[fnrstv]'
+builtin = "clear,rare,informal,usage,code,names"
+
+# --------- Pylint -------------
+[tool.pylint.'TYPECHECK']
+generated-members = "sh"
+
+[tool.pylint.'MESSAGES CONTROL']
+extension-pkg-whitelist = "pydantic"
+disable = [
+    "broad-except",
+    "invalid-name",
+    "line-too-long",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-instance-attributes",
+    "too-many-statements",
+    "unused-import",
+    "wrong-import-order",
+]
+
+[tool.pylint.FORMAT]
+expected-line-ending-format = "LF"
+
+
+
+# --------- Mypy -------------
+
+[tool.mypy]
+show_error_codes = true
+follow_imports = "silent"
+ignore_missing_imports = false
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_reexport = true
+warn_unused_configs = true
+disallow_subclassing_any = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+plugins = [
+  "pydantic.mypy"
+]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+# Required to not have  error: Untyped decorator makes function on fixtures and
+# parametrize decorators
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+#module = [ ]
+ignore_missing_imports = true
