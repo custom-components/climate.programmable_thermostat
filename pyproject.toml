@@ -1,9 +1,29 @@
-[build-system]
-requires = ["setuptools>=61.2"]
-build-backend = "setuptools.build_meta"
-
 [project]
+# PEP 621 project metadata
+# See https://www.python.org/dev/peps/pep-0621/
 dynamic = ["version"]
+#authors = [ {name = "TBD", email = "TBD"}, ]
+#license = {text = "TBD"}
+requires-python = ">=3.9.0"
+dependencies = [
+]
+name = "ha_programmable_thermostat"
+description = "TBD"
+readme = "README.md"
+classifiers=[
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    #"License :: OSI Approved :: TBD",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Utilities",
+    "Natural Language :: English",
+]
+
 
 [tool.codespell]
 ignore-words-list = """
