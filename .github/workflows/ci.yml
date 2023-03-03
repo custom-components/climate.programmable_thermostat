@@ -90,7 +90,7 @@ jobs:
           . venv/bin/activate
           pre-commit install-hooks
 
-  pre-commit:
+  pre-commit-run:
     name: Run all of pre-commit
     runs-on: ubuntu-latest
     needs: pre-commit
