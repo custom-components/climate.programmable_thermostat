@@ -8,7 +8,7 @@ from homeassistant.components.climate.const import (
 #Generic
 VERSION = '8.2'
 DOMAIN = 'programmable_thermostat'
-PLATFORM = 'climate'
+PLATFORM = ['climate']
 ISSUE_URL = 'https://github.com/custom-components/climate.programmable_thermostat/issues'
 CONFIGFLOW_VERSION = 4
 
