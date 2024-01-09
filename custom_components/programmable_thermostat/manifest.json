@@ -2,6 +2,7 @@
   "domain": "programmable_thermostat",
   "name": "Programmable Thermostat",
   "documentation": "https://github.com/custom-components/climate.programmable_thermostat",
+  "issue_tracker": "https://github.com/custom-components/climate.programmable_thermostat/issues",
   "dependencies": [
     "sensor",
     "switch"
@@ -9,5 +10,5 @@
   "codeowners": [],
   "requirements": [],
   "config_flow": true,
-  "version": "8.1"
+  "version": "8.3"
 }

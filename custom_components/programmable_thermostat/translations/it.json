@@ -1,6 +1,5 @@
 {
     "config": {
-        "title": "Termostato programmabile",
         "step": {
             "user": {
                 "title": "Termostato programmabile - definizione entità",
@@ -52,7 +51,6 @@
         }
     },
     "options": {
-        "title": "Termostato programmabile",
         "step": {
             "init": {
                 "title": "Termostato programmabile - definizione entità",

@@ -1,6 +1,5 @@
 {
     "config": {
-        "title": "Programmable thermostat",
         "step": {
             "user": {
                 "title": "Programmable thermostat - entities definition",
@@ -52,7 +51,6 @@
         }
     },
     "options": {
-        "title": "Programmable thermostat",
         "step": {
             "init": {
                 "title": "Programmable thermostat - entities definition",
