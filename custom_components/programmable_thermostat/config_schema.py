@@ -1,8 +1,8 @@
 import voluptuous as vol
 import logging
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.climate.const import (
-    SUPPORT_TARGET_TEMPERATURE
+from homeassistant.components.climate import (
+    ClimateEntityFeature
 )
 from homeassistant.const import CONF_NAME, CONF_ENTITIES
 from .const import (
@@ -35,7 +35,7 @@ CONF_RELATED_CLIMATE = 'related_climate'
 CONF_HVAC_OPTIONS = 'hvac_options'
 CONF_AUTO_MODE = 'auto_mode'
 CONF_MIN_CYCLE_DURATION = 'min_cycle_duration'
-SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE)
+SUPPORT_FLAGS = (ClimateEntityFeature.TARGET_TEMPERATURE)
 
 CLIMATE_SCHEMA = {
     vol.Optional(CONF_HEATER): cv.entity_ids,

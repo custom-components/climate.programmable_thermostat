@@ -5,16 +5,12 @@ import json
 from datetime import timedelta
 from homeassistant.helpers.reload import async_setup_reload_service
 from homeassistant.config_entries import SOURCE_IMPORT
-from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
-from homeassistant.components.climate.const import (
-    CURRENT_HVAC_COOL,
-    CURRENT_HVAC_HEAT,
-    CURRENT_HVAC_OFF,
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_OFF,
-    HVAC_MODE_HEAT_COOL
-)
+from homeassistant.components.climate import (
+    PLATFORM_SCHEMA,
+    ClimateEntity,
+    HVACAction,
+    HVACMode
+    )
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_TEMPERATURE,
@@ -117,32 +113,32 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         self._cur_temp = self._getFloat(self._getStateSafe(self.sensor_entity_id), self._target_temp)
         self._active = False
         self._temp_lock = asyncio.Lock()
-        self._hvac_action = CURRENT_HVAC_OFF
+        self._hvac_action = HVACAction.OFF
 
         """Setting up of HVAC list according to the option parameter"""
         options = "{0:b}".format(self._hvac_options).zfill(3)[::-1]
         if options[0] == "1":
-            self._hvac_list.append(HVAC_MODE_OFF)
+            self._hvac_list.append(HVACMode.OFF)
         if self.heaters_entity_ids is not None and options[1] == "1":
-            self._hvac_list.append(HVAC_MODE_HEAT)
+            self._hvac_list.append(HVACMode.HEAT)
         if self.coolers_entity_ids is not None and options[1] == "1":
-            self._hvac_list.append(HVAC_MODE_COOL)
+            self._hvac_list.append(HVACMode.COOL)
         if (self.heaters_entity_ids != None or self.coolers_entity_ids != None) and  options[2] == "1":
-            self._hvac_list.append(HVAC_MODE_HEAT_COOL)
+            self._hvac_list.append(HVACMode.HEAT_COOL)
         if self.heaters_entity_ids == None and self.coolers_entity_ids == None:
             _LOGGER.error("ERROR on climate.%s, you have to define at least one between heater and cooler", self._name)
         if not self._hvac_list:
-            self._hvac_list.append(HVAC_MODE_OFF)
+            self._hvac_list.append(HVACMode.OFF)
             _LOGGER.error("ERROR on climate.%s, you have choosen a wrong value of hvac_options, please check documentation", self._name)
 
-        if self._initial_hvac_mode == HVAC_MODE_HEAT:
-            self._hvac_mode = HVAC_MODE_HEAT
-        elif self._initial_hvac_mode == HVAC_MODE_HEAT_COOL:
-            self._hvac_mode = HVAC_MODE_HEAT_COOL
-        elif self._initial_hvac_mode == HVAC_MODE_COOL:
-            self._hvac_mode = HVAC_MODE_COOL
+        if self._initial_hvac_mode == HVACMode.HEAT:
+            self._hvac_mode = HVACMode.HEAT
+        elif self._initial_hvac_mode == HVACMode.HEAT_COOL:
+            self._hvac_mode = HVACMode.HEAT_COOL
+        elif self._initial_hvac_mode == HVACMode.COOL:
+            self._hvac_mode = HVACMode.COOL
         else:
-            self._hvac_mode = HVAC_MODE_OFF
+            self._hvac_mode = HVACMode.OFF
         self._support_flags = SUPPORT_FLAGS
 
         """ Check if heaters and coolers are the same """
@@ -159,11 +155,11 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         self.async_on_remove(
             async_track_state_change_event(
                 self.hass, self.sensor_entity_id, self._async_sensor_changed))
-        if self._hvac_mode == HVAC_MODE_HEAT:
+        if self._hvac_mode == HVACMode.HEAT:
             self.async_on_remove(
                 async_track_state_change_event(
                     self.hass, self.heaters_entity_ids, self._async_switch_changed))
-        elif self._hvac_mode == HVAC_MODE_COOL:
+        elif self._hvac_mode == HVACMode.COOL:
             self.async_on_remove(
                 async_track_state_change_event(
                     self.hass, self.coolers_entity_ids, self._async_switch_changed))
@@ -185,7 +181,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             target_state = self._getStateSafe(self.target_entity_id)
             if target_state and \
                target_state != STATE_UNKNOWN and \
-               self._hvac_mode != HVAC_MODE_HEAT_COOL:
+               self._hvac_mode != HVACMode.HEAT_COOL:
                 self._async_update_program_temp(target_state)
 
         self.hass.bus.async_listen_once(
@@ -213,7 +209,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
                     old_state.state is not None):
                 self._hvac_mode = \
                     old_state.state
-                self._enabled = self._hvac_mode != HVAC_MODE_OFF
+                self._enabled = self._hvac_mode != HVACMode.OFF
 
         else:
             # No previous state, try and restore defaults
@@ -224,31 +220,31 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
 
         # Set default state to off
         if not self._hvac_mode:
-            self._hvac_mode = HVAC_MODE_OFF
+            self._hvac_mode = HVACMode.OFF
 
     async def control_system_mode(self):
         """this is used to decide what to do, so this function turn off switches and run the function
            that control the temperature."""
-        if self._hvac_mode == HVAC_MODE_OFF:
+        if self._hvac_mode == HVACMode.OFF:
             _LOGGER.debug("set to off")
             for opmod in self._hvac_list:
-                if opmod is HVAC_MODE_HEAT:
+                if opmod is HVACMode.HEAT:
                     await self._async_turn_off(mode="heat", forced=True)
-                if opmod is HVAC_MODE_COOL:
+                if opmod is HVACMode.COOL:
                     await self._async_turn_off(mode="cool", forced=True)
-            self._hvac_action = CURRENT_HVAC_OFF
-        elif self._hvac_mode == HVAC_MODE_HEAT:
+            self._hvac_action = HVACAction.OFF
+        elif self._hvac_mode == HVACMode.HEAT:
             _LOGGER.debug("set to heat")
             await self._async_control_thermo(mode="heat")
             for opmod in self._hvac_list:
-                if opmod is HVAC_MODE_COOL and not self._are_entities_same:
+                if opmod is HVACMode.COOL and not self._are_entities_same:
                     await self._async_turn_off(mode="cool", forced=True)
                     return
-        elif self._hvac_mode == HVAC_MODE_COOL:
+        elif self._hvac_mode == HVACMode.COOL:
             _LOGGER.debug("set to cool")
             await self._async_control_thermo(mode="cool")
             for opmod in self._hvac_list:
-                if opmod is HVAC_MODE_HEAT and not self._are_entities_same:
+                if opmod is HVACMode.HEAT and not self._are_entities_same:
                     await self._async_turn_off(mode="heat", forced=True)
                     return
         else:
@@ -257,10 +253,10 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             # Check of self._auto_mode has been added to avoid cooling a room that has just been heated and vice versa
             # LET'S PRESERVE ENERGY!
             # If you don't want to check that you have just to set auto_mode=all
-                if opmod is HVAC_MODE_HEAT and self._auto_mode != 'cooling':
+                if opmod is HVACMode.HEAT and self._auto_mode != 'cooling':
                     _LOGGER.debug("climate.%s - Entered here in heating mode", self._name)
                     await self._async_control_thermo(mode="heat")
-                if opmod is HVAC_MODE_COOL and self._auto_mode != 'heating':
+                if opmod is HVACMode.COOL and self._auto_mode != 'heating':
                     _LOGGER.debug("climate.%s - Entered here in cooling mode", self._name)
                     await self._async_control_thermo(mode="cool")
         return
@@ -284,7 +280,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         if self._related_climate is not None:
             for _climate in self._related_climate:
                 related_climate_hvac_action = self.hass.states.get(_climate).attributes['hvac_action']
-                if related_climate_hvac_action == CURRENT_HVAC_HEAT or related_climate_hvac_action == CURRENT_HVAC_COOL:
+                if related_climate_hvac_action == HVACAction.HEATING or related_climate_hvac_action == HVACAction.COOLING:
                     _LOGGER.info("climate.%s - Master climate object action is %s, so no action taken.", self._name, related_climate_hvac_action)
                     return
         if mode == "heat":
@@ -301,14 +297,14 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
-        if hvac_mode == HVAC_MODE_HEAT:
-            self._hvac_mode = HVAC_MODE_HEAT
-        elif hvac_mode == HVAC_MODE_COOL:
-            self._hvac_mode = HVAC_MODE_COOL
-        elif hvac_mode == HVAC_MODE_OFF:
-            self._hvac_mode = HVAC_MODE_OFF
-        elif hvac_mode == HVAC_MODE_HEAT_COOL:
-            self._hvac_mode = HVAC_MODE_HEAT_COOL
+        if hvac_mode == HVACMode.HEAT:
+            self._hvac_mode = HVACMode.HEAT
+        elif hvac_mode == HVACMode.COOL:
+            self._hvac_mode = HVACMode.COOL
+        elif hvac_mode == HVACMode.OFF:
+            self._hvac_mode = HVACMode.OFF
+        elif hvac_mode == HVACMode.HEAT_COOL:
+            self._hvac_mode = HVACMode.HEAT_COOL
             self._async_restore_program_temp()
         else:
             _LOGGER.error("climate.%s - Unrecognized hvac mode: %s", self._name, hvac_mode)
@@ -341,7 +337,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         if new_state is None:
             return
         self._restore_temp = float(new_state.state)
-        if self._hvac_mode == HVAC_MODE_HEAT_COOL:
+        if self._hvac_mode == HVACMode.HEAT_COOL:
             self._async_restore_program_temp()
         await self.control_system_mode()
         await self.async_update_ha_state()
@@ -356,11 +352,11 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             return
 
         if mode == "heat":
-            hvac_mode = HVAC_MODE_COOL
+            hvac_mode = HVACMode.COOL
             delta = self._target_temp - self._cur_temp
             entities = self.heaters_entity_ids
         elif mode == "cool":
-            hvac_mode = HVAC_MODE_HEAT
+            hvac_mode = HVACMode.HEAT
             delta = self._cur_temp - self._target_temp
             entities = self.coolers_entity_ids
         else:
@@ -374,7 +370,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
                              "Generic thermostat active. %s, %s", self._name,
                              self._cur_temp, self._target_temp)
 
-            if not self._active or self._hvac_mode == HVAC_MODE_OFF or self._hvac_mode == hvac_mode:
+            if not self._active or self._hvac_mode == HVACMode.OFF or self._hvac_mode == hvac_mode:
                 return
 
             if delta <= 0:
@@ -389,7 +385,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
                     await self._async_turn_on(mode=mode)
 
     def _set_hvac_action_off(self, mode=None):
-        """This is used to set CURRENT_HVAC_OFF on the climate integration.
+        """This is used to set HVACAction.OFF on the climate integration.
            This has been split form turn_off function since this will allow to make dedicated calls.
            For the other CURRENT_HVAC_*, this is not needed becasue they work perfectly at the turn_on."""
         # This if condition is necessary to correctly manage the action for the different modes.
@@ -406,28 +402,28 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             _LOGGER.error("climate.%s - No type has been passed to control_thermo function", self._name)
             mode_2 = None
         _LOGGER.debug("climate.%s - delta=%s", self._name, delta)
-        if (((mode == "cool" and not self._hvac_mode == HVAC_MODE_HEAT) or \
-           (mode == "heat" and not self._hvac_mode == HVAC_MODE_COOL)) and \
-           not self._hvac_mode == HVAC_MODE_HEAT_COOL):
-            self._hvac_action = CURRENT_HVAC_OFF
+        if (((mode == "cool" and not self._hvac_mode == HVACMode.HEAT) or \
+           (mode == "heat" and not self._hvac_mode == HVACMode.COOL)) and \
+           not self._hvac_mode == HVACMode.HEAT_COOL):
+            self._hvac_action = HVACAction.OFF
             _LOGGER.debug("climate.%s - new action %s", self._name, self._hvac_action)
-        elif self._hvac_mode == HVAC_MODE_HEAT_COOL and delta <= 0:
-            self._hvac_action = CURRENT_HVAC_OFF
+        elif self._hvac_mode == HVACMode.HEAT_COOL and delta <= 0:
+            self._hvac_action = HVACAction.OFF
             _LOGGER.debug("climate.%s - new action %s", self._name, self._hvac_action)
             if abs(delta) >= self._tolerance and entities != None:
                 self._set_hvac_action_on(mode=mode_2)
         else:
             if self._are_entities_same and not self._is_device_active_function(forced=False):
-                self._hvac_action = CURRENT_HVAC_OFF
+                self._hvac_action = HVACAction.OFF
             else:
                 _LOGGER.error("climate.%s - Error during set of HVAC_ACTION", self._name)
 
     def _set_hvac_action_on(self, mode=None):
         """This is used to set CURRENT_HVAC_* according to the mode that is running."""
         if mode == "heat":
-            self._hvac_action = CURRENT_HVAC_HEAT
+            self._hvac_action = HVACAction.HEATING
         elif mode == "cool":
-            self._hvac_action = CURRENT_HVAC_COOL
+            self._hvac_action = HVACAction.COOLING
         else:
             _LOGGER.error("climate.%s - No type has been passed to turn_on function", self._name)
         _LOGGER.debug("climate.%s - new action %s", self._name, self._hvac_action)
@@ -462,17 +458,17 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         _LOGGER.debug("climate.%s - \r\nheaters: %s \r\ncoolers: %s \r\n_check_mode_type: %s \r\n_hvac_mode: %s \r\nforced: %s", self._name, self.heaters_entity_ids, self.coolers_entity_ids, self._check_mode_type, self._hvac_mode, forced)
         if not forced:
             _LOGGER.debug("climate.%s - 410- enter in classic mode: %s", self._name, forced)
-            if self._hvac_mode == HVAC_MODE_HEAT_COOL:
+            if self._hvac_mode == HVACMode.HEAT_COOL:
                 if self._check_mode_type == "cool":
                     return self._areAllInState(self.coolers_entity_ids, STATE_ON)
                 elif self._check_mode_type == "heat":
                     return self._areAllInState(self.heaters_entity_ids, STATE_ON)
                 else:
                     return False
-            elif self._hvac_mode == HVAC_MODE_HEAT:
+            elif self._hvac_mode == HVACMode.HEAT:
                 _LOGGER.debug("climate.%s - 419 - heaters: %s", self._name, self.heaters_entity_ids)
                 return self._areAllInState(self.heaters_entity_ids, STATE_ON)
-            elif self._hvac_mode == HVAC_MODE_COOL:
+            elif self._hvac_mode == HVACMode.COOL:
                 _LOGGER.debug("climate.%s - 422 - coolers: %s", self._name, self.coolers_entity_ids)
                 return self._areAllInState(self.coolers_entity_ids, STATE_ON)
             else:
