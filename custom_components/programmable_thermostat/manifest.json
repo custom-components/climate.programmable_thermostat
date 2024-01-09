@@ -10,5 +10,5 @@
   "codeowners": [],
   "requirements": [],
   "config_flow": true,
-  "version": "8.1"
+  "version": "8.3"
 }
