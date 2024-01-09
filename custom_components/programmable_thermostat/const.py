@@ -1,9 +1,5 @@
 """Programmable thermostat's constant """
-from homeassistant.components.climate.const import (
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_OFF,
-    HVAC_MODE_HEAT_COOL)
+from homeassistant.components.climate import HVACMode
 
 #Generic
 VERSION = '8.3'
@@ -25,8 +21,8 @@ DEFAULT_MIN_CYCLE_DURATION = ''
 #Others
 MAX_HVAC_OPTIONS = 8
 AUTO_MODE_OPTIONS = ['all', 'heating', 'cooling']
-INITIAL_HVAC_MODE_OPTIONS = ['', HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_HEAT_COOL]
-INITIAL_HVAC_MODE_OPTIONS_OPTFLOW = ['null', HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_HEAT_COOL]
+INITIAL_HVAC_MODE_OPTIONS = ['', HVACMode.COOL, HVACMode.HEAT, HVACMode.OFF, HVACMode.HEAT_COOL]
+INITIAL_HVAC_MODE_OPTIONS_OPTFLOW = ['null', HVACMode.COOL, HVACMode.HEAT, HVACMode.OFF, HVACMode.HEAT_COOL]
 REGEX_STRING = r'((?P<hours>\d+?):(?=(\d+?:\d+?)))?((?P<minutes>\d+?):)?((?P<seconds>\d+?))?$'
 
 #Attributes

@@ -273,7 +273,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         if not self._is_device_active_function(forced=False) and self.is_active_long_enough(mode=mode):
             self._set_hvac_action_on(mode=mode)
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_ON, data)
-            await self.async_update_ha_state()
+            await self.async_write_ha_state()
 
     async def _async_turn_off(self, mode=None, forced=False):
         """Turn heater toggleable device off."""
@@ -293,7 +293,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         if self._is_device_active_function(forced=forced) and self.is_active_long_enough(mode=mode):
             self._set_hvac_action_off(mode=mode)
             await self.hass.services.async_call(HA_DOMAIN, SERVICE_TURN_OFF, data)
-            await self.async_update_ha_state()
+            await self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
@@ -320,7 +320,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             return
         self._target_temp = float(temperature)
         await self.control_system_mode()
-        await self.async_update_ha_state()
+        await self.async_write_ha_state()
 
     async def _async_sensor_changed(self, event):
         """Handle temperature changes."""
@@ -329,7 +329,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
             return
         self._async_update_temp(new_state.state)
         await self.control_system_mode()
-        await self.async_update_ha_state()
+        await self.async_write_ha_state()
 
     async def _async_target_changed(self, event):
         """Handle temperature changes in the program."""
@@ -340,7 +340,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         if self._hvac_mode == HVACMode.HEAT_COOL:
             self._async_restore_program_temp()
         await self.control_system_mode()
-        await self.async_update_ha_state()
+        await self.async_write_ha_state()
 
     async def _async_control_thermo(self, mode=None):
         """Check if we need to turn heating on or off."""
