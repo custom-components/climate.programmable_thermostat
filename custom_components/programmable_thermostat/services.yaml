@@ -1,2 +1,3 @@
 reload:
-  description: Reload all generic_thermostat entities.
+  description: Reload all programmable_thermostat entities.
+  name: reload programmable thermostat
