@@ -1,10 +1,11 @@
 """Programmable thermostat's constant """
 from homeassistant.components.climate import HVACMode
+from homeassistant.const import Platform
 
 #Generic
-VERSION = '8.3'
+VERSION = '8.4'
 DOMAIN = 'programmable_thermostat'
-PLATFORM = 'climate'
+PLATFORM = [Platform.CLIMATE]
 ISSUE_URL = 'https://github.com/custom-components/climate.programmable_thermostat/issues'
 CONFIGFLOW_VERSION = 4
 
