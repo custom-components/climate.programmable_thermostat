@@ -29,7 +29,7 @@ async def async_setup(hass, config):
     _LOGGER.info("Set up of integration %s, version %s, in case of issue open ticket at %s", DOMAIN, VERSION, ISSUE_URL)
     return True
 
-async def async_setup_entry(hass, config_entry):
+async def async_setup_entry(hass, config_entry: ConfigEntry):
     """Set up this integration using UI."""
     if config_entry.source == config_entries.SOURCE_IMPORT:
         # We get here if the integration is set up using YAML
@@ -37,7 +37,7 @@ async def async_setup_entry(hass, config_entry):
         return True
     undo_listener = config_entry.add_update_listener(update_listener)
     _LOGGER.info("Added new ProgrammableThermostat entity, entry_id: %s", config_entry.entry_id)
-    hass.async_create_task(hass.config_entries.async_forward_entry_setup(config_entry, PLATFORM))
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORM)
 
     return True
 
