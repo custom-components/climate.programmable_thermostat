@@ -35,7 +35,7 @@ CONF_RELATED_CLIMATE = 'related_climate'
 CONF_HVAC_OPTIONS = 'hvac_options'
 CONF_AUTO_MODE = 'auto_mode'
 CONF_MIN_CYCLE_DURATION = 'min_cycle_duration'
-SUPPORT_FLAGS = (ClimateEntityFeature.TARGET_TEMPERATURE)
+SUPPORT_FLAGS = (ClimateEntityFeature.TARGET_TEMPERATURE|ClimateEntityFeature.TURN_OFF|ClimateEntityFeature.TURN_ON)
 
 CLIMATE_SCHEMA = {
     vol.Optional(CONF_HEATER): cv.entity_ids,
