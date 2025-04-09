@@ -31,6 +31,7 @@ from homeassistant.helpers.event import (
     async_track_time_interval
 )
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import slugify
 from .const import (
     VERSION,
     DOMAIN,
@@ -92,6 +93,7 @@ class ProgrammableThermostat(ClimateEntity, RestoreEntity):
         """Initialize the thermostat."""
         self.hass = hass
         self._name = config.get(CONF_NAME)
+        self._attr_unique_id = f"programmable_thermostat_{slugify(self._name)}"
         self.heaters_entity_ids = self._getEntityList(config.get(CONF_HEATER))
         self.coolers_entity_ids = self._getEntityList(config.get(CONF_COOLER))
         self.sensor_entity_id = config.get(CONF_SENSOR)
